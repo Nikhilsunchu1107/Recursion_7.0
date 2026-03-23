@@ -527,41 +527,7 @@ def discover_competitors(dataset: dict, max_results: int = 20) -> dict:
         "total_raw_found": len(all_channel_ids),
         "total_after_hard_filters": len(filtered),
 
-        # Tier counts
-        "total_qualified": len(tiers["qualified"]),
-        "strong_count": len(tiers["strong"]),
-        "moderate_count": len(tiers["moderate"]),
-        "weak_count": len(tiers["weak"]),
-
         # Full qualified list for dashboard (strong + moderate only)
+        # All of these are used for strategy generation
         "competitors": tiers["qualified"],
-
-        # Top competitors for strategy generation (strong only)
-        "strategy_competitors": tiers["strategy_competitors"],
-
-        # Tier breakdown for frontend display
-        "tiers": {
-            "strong": tiers["strong"],
-            "moderate": tiers["moderate"]
-        },
-
-        # Strategy ready data — pre-built summary of top competitors
-        # This gets passed directly to strategy generation
-        "strategy_ready_data": {
-            "top_competitors": [
-                {
-                    "channel_name": c["channel_name"],
-                    "subscribers": c["subscribers"],
-                    "total_views": c["total_views"],
-                    "video_count": c["video_count"],
-                    "relevance_score": c["relevance_score"],
-                    "verdict": c["verdict"]
-                }
-                for c in tiers["strategy_competitors"]
-            ],
-            "avg_subscribers": int(sum(c["subscribers"] for c in tiers["strategy_competitors"]) / max(len(tiers["strategy_competitors"]), 1)),
-            "avg_total_views": int(sum(c["total_views"] for c in tiers["strategy_competitors"]) / max(len(tiers["strategy_competitors"]), 1)),
-            "strongest_competitor": tiers["strategy_competitors"][0] if tiers["strategy_competitors"] else None,
-            "total_strategy_competitors": len(tiers["strategy_competitors"])
-        }
     }

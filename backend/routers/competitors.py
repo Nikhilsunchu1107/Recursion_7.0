@@ -37,14 +37,6 @@ async def discover(request: CompetitorRequest):
         except Exception as e:
             print(f"⚠️ Cache save failed: {e}")
 
-        # Add summary message for frontend
-        result["summary_message"] = (
-            f"Found {result['strong_count']} strong and "
-            f"{result['moderate_count']} moderate competitors. "
-            f"Strategy will be based on top {result['strategy_ready_data']['total_strategy_competitors']} "
-            f"strong competitors."
-        )
-
         return result
 
     except HTTPException:
