@@ -29,14 +29,14 @@ export default function SearchAnalyzeLanding() {
           <a className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium" href="#">Solutions</a>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium hidden sm:block">Login</button>
+          <a href="/login" className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium hidden sm:block">Login</a>
           <button
             onClick={handleAnalyze}
             className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-6 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#adc6ff]/10"
           >
             Analyze
           </button>
-          <span className="material-symbols-outlined text-[#9ea0a3] cursor-pointer hover:text-[#adc6ff] transition-colors">account_circle</span>
+          <a href="/profile"><span className="material-symbols-outlined text-[#9ea0a3] cursor-pointer hover:text-[#adc6ff] transition-colors">account_circle</span></a>
         </div>
       </nav>
 

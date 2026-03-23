@@ -84,8 +84,8 @@ export default function CompetitorDiscovery() {
       </header>
 
       {/* Main Content Canvas */}
-      <main className="pt-24 pb-20 md:pb-8 ml-0 md:ml-64 min-h-screen px-6 lg:px-12">
-        <section className="max-w-7xl mx-auto">
+      <main className="pt-24 pb-20 md:pb-12 ml-0 md:ml-64 min-h-screen px-6 lg:px-12">
+        <section className="w-full mx-auto">
           {/* Header Section */}
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-2">
@@ -107,7 +107,7 @@ export default function CompetitorDiscovery() {
           </div>
 
           {/* Competitor Card Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
             {competitors.map(({ name, handle, subs, views, tags, img }) => (
               <div
                 key={name}

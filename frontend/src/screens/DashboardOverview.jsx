@@ -31,16 +31,16 @@ export default function DashboardOverview() {
             <button className="p-2 text-[#9ea0a3] hover:bg-[#1e1f26] rounded-full transition-all">
               <span className="material-symbols-outlined">notifications</span>
             </button>
-            <button className="p-2 text-[#9ea0a3] hover:bg-[#1e1f26] rounded-full transition-all">
+            <a href="/profile" className="p-2 text-[#9ea0a3] hover:bg-[#1e1f26] rounded-full transition-all">
               <span className="material-symbols-outlined">account_circle</span>
-            </button>
+            </a>
           </div>
         </header>
 
         {/* Page Canvas */}
-        <div className="px-6 mt-8 space-y-8 max-w-7xl mx-auto">
+        <div className="px-6 lg:px-12 mt-8 pb-12 space-y-8 w-full mx-auto">
           {/* Stat Cards Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4">
             <div className="bg-[#1e1f26] p-6 rounded-xl border border-white/5 hover:bg-[#282a30] transition-colors">
               <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Total Competitors Found</p>
               <div className="flex items-end justify-between">

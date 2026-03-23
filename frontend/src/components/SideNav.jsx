@@ -1,5 +1,6 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { to: '/dashboard_overview', icon: 'dashboard', label: 'Dashboard' },
@@ -7,12 +8,13 @@ const navItems = [
   { to: '/search_analyze_landing', icon: 'analytics', label: 'Channel Analysis' },
   { to: '/pattern_insights', icon: 'insights', label: 'Pattern Insights' },
   { to: '/growth_strategy', icon: 'trending_up', label: 'Growth Strategy' },
-  { to: '/growth_strategy#gaps', icon: 'lightbulb', label: 'Opportunity Gaps' },
+  { to: '/opportunity_gaps', icon: 'lightbulb', label: 'Opportunity Gaps' },
 ];
 
 export default function SideNav() {
+  const { user } = useAuth();
   return (
-    <aside className="fixed left-0 top-0 h-screen z-40 bg-[#191b22] hidden md:flex flex-col w-64 border-r border-white/5">
+    <aside className="fixed left-0 top-0 h-screen z-40 bg-[#191b22] hidden md:flex flex-col w-64">
       <div className="px-6 py-8">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center">
@@ -54,15 +56,22 @@ export default function SideNav() {
       </nav>
 
       <div className="p-4 border-t border-white/5">
-        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#1e1f26] transition-colors cursor-pointer">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center text-[#00285d] font-bold text-sm">
-            AC
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-bold text-[#e2e2eb] truncate">Alex Chen</p>
-            <p className="text-xs text-[#9ea0a3] truncate">Pro Intelligence</p>
-          </div>
-        </div>
+        {user ? (
+          <Link to="/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#1e1f26] transition-colors cursor-pointer">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center text-[#00285d] font-bold text-sm shrink-0 uppercase">
+              {user.name.substring(0, 2)}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-[#e2e2eb] truncate">{user.name}</p>
+              <p className="text-xs text-[#9ea0a3] truncate">{user.role}</p>
+            </div>
+          </Link>
+        ) : (
+          <Link to="/login" className="flex items-center justify-center gap-2 p-3 w-full rounded-xl bg-white/5 hover:bg-white/10 text-[#e2e2eb] font-bold text-sm transition-colors">
+            <span className="material-symbols-outlined text-sm">login</span>
+            Sign In
+          </Link>
+        )}
       </div>
     </aside>
   );

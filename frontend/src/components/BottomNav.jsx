@@ -3,9 +3,10 @@ import { NavLink } from 'react-router-dom';
 
 const bottomItems = [
   { to: '/dashboard_overview', icon: 'home', label: 'Home' },
-  { to: '/competitor_discovery', icon: 'search', label: 'Discovery' },
+  { to: '/competitor_discovery', icon: 'search', label: 'Discover' },
   { to: '/pattern_insights', icon: 'query_stats', label: 'Analysis' },
-  { to: '/growth_strategy', icon: 'auto_awesome', label: 'Gaps' },
+  { to: '/growth_strategy', icon: 'auto_awesome', label: 'Strategy' },
+  { to: '/opportunity_gaps', icon: 'lightbulb', label: 'Gaps' },
 ];
 
 export default function BottomNav() {
