@@ -13,7 +13,7 @@
 ## 1. Executive Summary
 SpyGlass is an autonomous competitive intelligence platform designed for digital content creators. Given a YouTube channel URL, SpyGlass automatically discovers competing channels, extracts structured performance data, identifies content patterns and gaps, and generates a data-backed growth strategy — all without any manual research.
 
-The core insight driving SpyGlass is that competitive analysis in the creator economy is currently manual, biased, and time-consuming. Creators either skip it entirely or rely on intuition. SpyGlass replaces guesswork with an end-to-end intelligence pipeline powered by the YouTube Data API, scikit-learn clustering, and the Claude LLM.
+The core insight driving SpyGlass is that competitive analysis in the creator economy is currently manual, biased, and time-consuming. Creators either skip it entirely or rely on intuition. SpyGlass replaces guesswork with an end-to-end intelligence pipeline powered by the YouTube Data API, scikit-learn clustering, and the OpenRouter LLM APIs.
 
 ## 2. Problem Statement
 ### 2.1 Background
@@ -55,11 +55,11 @@ Success in the creator economy is increasingly determined by strategic positioni
 - LLM-powered strategy generation with data-anchored recommendations
 - Dashboard UI with competitor comparison charts and strategy cards
 - Redis caching to preserve YouTube API quota
+- User authentication (Supabase OAuth) and account management
 
 ### 4.2 Out of Scope
 - Multi-platform support (TikTok, Instagram, X)
 - Historical trend tracking and time-series analysis
-- User accounts, saved analyses, and persistent history
 - Real-time notifications or scheduled re-analysis
 - Monetization and advertising strategy integration
 
@@ -70,7 +70,8 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 | :--- | :--- | :--- | :--- |
 | **Frontend** | React 18 + Vite + Tailwind | Vercel (CDN) | UI, charts, strategy cards |
 | **Backend API** | Python 3.11 + FastAPI | Render (Docker) | Pipeline orchestration, API routing |
-| **AI / ML** | Claude API + scikit-learn | Within backend | NLP, clustering, strategy generation |
+| **Database/Auth**| Supabase (Postgres + Auth) | Supabase Cloud | OAuth, user accounts, persistence |
+| **AI / ML** | OpenRouter API + scikit-learn | Within backend | NLP, clustering, strategy generation |
 | **Cache** | Redis 7 | Render add-on | YouTube API quota protection |
 | **Data Source**| YouTube Data API v3 | External | Channel and video data |
 
@@ -102,7 +103,7 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 - **FR-19**: Return structured JSON with all metrics per channel (High)
 
 ### 6.4 Strategy Generation
-- **FR-20**: Send structured analysis JSON to Claude API with a strategy prompt (High)
+- **FR-20**: Send structured analysis JSON to OpenRouter API with a strategy prompt (High)
 - **FR-21**: Generate minimum 4 specific, actionable recommendations (High)
 - **FR-22**: Each recommendation must cite a specific competitor channel by name (High)
 - **FR-23**: Identify and return a list of content gaps (topics to target) (High)
@@ -117,6 +118,11 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 - **FR-30**: Strategy recommendation cards (min 4), each with title and description (High)
 - **FR-31**: Content gaps list with topic labels (High)
 - **FR-32**: Responsive layout functional on 1280px+ screens (Medium)
+
+### 6.6 Authentication & User Accounts
+- **FR-33**: Integrate Supabase Auth for user login/signup via OAuth (Google/GitHub) (High)
+- **FR-34**: Protect backend endpoints to only allow authenticated requests (High)
+- **FR-35**: Store user profiles and link them to their analysis history in Supabase Postgres (Medium)
 
 ## 7. Non-Functional Requirements
 - **Performance**: End-to-end analysis completes in < 60s
@@ -145,7 +151,10 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 
 ## 9. Environment Variables
 - `YOUTUBE_API_KEY`: Google Cloud Console API key (Backend)
-- `ANTHROPIC_API_KEY`: Anthropic API key (Backend)
+- `OPENROUTER_API_KEY`: OpenRouter API key (Backend)
 - `REDIS_URL`: Redis connection string (Backend)
 - `FRONTEND_URL`: Hosted frontend URL for CORS (Backend)
+- `SUPABASE_URL`: Supabase project URL (Backend)
+- `VITE_SUPABASE_URL`: Supabase project URL (Frontend)
+- `VITE_SUPABASE_ANON_KEY`: Supabase anonymous key (Frontend)
 - `VITE_API_URL`: Backend API URL (Frontend)
