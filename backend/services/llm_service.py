@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_HTTP_REFERER = os.getenv("LLM_HTTP_REFERER", "http://localhost:8000")
 LLM_BASE_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
@@ -64,7 +65,7 @@ Return ONLY valid JSON in this exact format, with no markdown formatting around 
     headers = {
         "Authorization": f"Bearer {LLM_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:8000",
+        "HTTP-Referer": LLM_HTTP_REFERER,
         "X-Title": "SpyGlass Strategy Engine",
     }
 
