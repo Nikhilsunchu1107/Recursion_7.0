@@ -5,25 +5,28 @@ from datetime import datetime
 
 class ChannelRequest(BaseModel):
     channel_url: str
-    niche_keyword: str
+    niche_keyword: Optional[str] = None
 
 
 class VideoData(BaseModel):
+    video_id: str
     title: str
     views: int
     likes: int
     comments: int
     duration: str
-    published_date: str
+    published_at: str
 
 
 class CompetitorData(BaseModel):
     channel_id: str
-    name: str
+    channel_name: str
     subscribers: int
     total_views: int
     video_count: int
-    recent_videos: List[VideoData] = []
+    avg_views: Optional[int] = 0
+    upload_frequency: Optional[float] = 0.0
+    videos: List[VideoData] = []
 
 
 class PatternResult(BaseModel):

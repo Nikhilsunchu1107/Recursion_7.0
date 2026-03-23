@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException
-from services.youtube_service import extract_channel_id, get_channel_details
+from services.youtube_service import extract_channel_id, get_channel_full_data
 
 router = APIRouter(prefix="/channel", tags=["channel"])
 
 
 @router.get("/{channel_url:path}")
 async def get_channel(channel_url: str):
-    """Get channel details from a YouTube channel URL."""
+    """Get detailed channel info including recent videos and summary."""
     try:
-        channel_id = extract_channel_id(channel_url)
-        details = get_channel_details(channel_id)
+        # get_channel_full_data inherently performs caching checks and quota handling
+        details = get_channel_full_data(channel_url)
         return details
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
