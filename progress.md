@@ -53,6 +53,6 @@ This document tracks the implementation progress of features defined in the `PRD
 - [ ] **FR-25**: Return `StrategyRecommendation` Pydantic models.
 
 ## 4. Authentication & User Accounts (FR-33 to FR-35)
-- [ ] **FR-33**: Integrate Supabase Auth (OAuth login).
-- [ ] **FR-34**: Protect backend endpoints (JWT auth middleware).
-- [ ] **FR-35**: Store user profiles and history in Supabase Postgres.
+- [x] **FR-33**: Integrate Supabase Auth (OAuth login).
+- [x] **FR-34**: Protect backend endpoints (JWT auth middleware).
+- [x] **FR-35**: Store user profiles and history in Supabase Postgres.

@@ -1,16 +1,17 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from models.schemas import ChannelRequest
 from services.youtube_service import (
     build_channel_dataset,
 )
 from services.analysis_service import analyze_patterns
 from services.openrouter_service import generate_strategy
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
 
 @router.post("/generate")
-async def generate(request: ChannelRequest):
+async def generate(request: ChannelRequest, user=Depends(get_current_user)):
     """
     Full pipeline endpoint:
     1. Build channel dataset (extracts channel, fetches videos, discovers competitors)
@@ -34,6 +35,18 @@ async def generate(request: ChannelRequest):
 
         # Step 3: Generate strategy with OpenRouter
         strategy = generate_strategy(channel_data, patterns, competitors_raw)
+
+        # Step 4: Store history in Supabase
+        try:
+            from services.auth_service import supabase_client
+            if supabase_client and user:
+                supabase_client.table('analysis_history').insert({
+                    "user_id": user.id,
+                    "channel_url": request.channel_url,
+                    "channel_name": channel_data.get("channel_name", "")
+                }).execute()
+        except Exception as e:
+            print(f"Failed to log history: {e}")
 
         # Build response
         return {

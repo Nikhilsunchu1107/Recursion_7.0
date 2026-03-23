@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from services.youtube_service import (
@@ -6,6 +6,7 @@ from services.youtube_service import (
     build_channel_dataset,
     load_from_cache,
 )
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/competitors", tags=["competitors"])
 
@@ -16,7 +17,7 @@ class DiscoverRequest(BaseModel):
 
 
 @router.post("/discover")
-async def discover(request: DiscoverRequest):
+async def discover(request: DiscoverRequest, user=Depends(get_current_user)):
     """
     Discover competitor channels for a given YouTube channel.
 
