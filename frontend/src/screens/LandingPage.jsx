@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BottomNav from '../components/BottomNav';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -159,25 +160,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Mobile Bottom Nav */}
-      <div className="fixed bottom-0 left-0 w-full z-50 md:hidden bg-[#1e1f26]/80 backdrop-blur-lg border-t border-[#33343b]/15 p-2 flex justify-around items-center rounded-t-xl">
-        <a className="flex flex-col items-center justify-center text-[#adc6ff] bg-[#adc6ff]/10 rounded-xl px-3 py-1" href="#">
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>home</span>
-          <span className="text-[10px] font-medium mt-1">Home</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
-          <span className="material-symbols-outlined">search</span>
-          <span className="text-[10px] font-medium mt-1">Discovery</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
-          <span className="material-symbols-outlined">query_stats</span>
-          <span className="text-[10px] font-medium mt-1">Analysis</span>
-        </a>
-        <a className="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
-          <span className="material-symbols-outlined">auto_awesome</span>
-          <span className="text-[10px] font-medium mt-1">Gaps</span>
-        </a>
-      </div>
+      <BottomNav />
     </>
   );
 }
