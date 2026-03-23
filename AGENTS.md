@@ -12,12 +12,19 @@
 - Root-level product docs (for example `SpyGlass_PRD.docx`) describe requirements.
 
 ## Build, Test, and Development Commands
-Run commands from `frontend/`:
+**Frontend Commands (run from `frontend/`):**
 - `npm install` installs dependencies.
 - `npm run dev` starts the Vite dev server with HMR.
 - `npm run build` creates the production bundle in `frontend/dist/`.
 - `npm run preview` serves the production build locally.
 - `npm run lint` runs ESLint over `js/jsx` files.
+
+**Backend Commands (run from `backend/`):**
+- The project uses `.venv` as the **primary** Python environment.
+- `python3 -m venv .venv` initializes the environment.
+- `source .venv/bin/activate` activates it.
+- `pip install -r requirements.txt` installs backend dependencies.
+- `uvicorn main:app --reload` starts the FastAPI server.
 
 ## Coding Style & Naming Conventions
 - Use ES modules and functional React components.
