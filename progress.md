@@ -28,12 +28,12 @@ This document tracks the implementation progress of features defined in the `PRD
 - [ ] **FR-06**: Return structured `ChannelData`.
 
 ### 3.2 Competitor Discovery Module (FR-07 to FR-12)
-- [ ] **FR-07**: Autonomously search YouTube for channels using keywords.
-- [ ] **FR-08**: Filter channels by 0.1x–10x subscriber proximity.
-- [ ] **FR-09**: Score similarity (keyword + subs + cadence).
-- [ ] **FR-10**: Return top 5–8 similar, authentic channels (Activity, Engagement, and Spam checks).
-- [ ] **FR-11**: Exclude input channel from results.
-- [ ] **FR-12**: Handle edge cases (fewer than 5 competitors).
+- [x] **FR-07**: Autonomously search YouTube for channels using keywords.
+- [x] **FR-08**: Filter channels by 0.1x–10x subscriber proximity.
+- [x] **FR-09**: Score similarity (keyword + subs + cadence).
+- [x] **FR-10**: Return top 5–8 similar, authentic channels (Activity, Engagement, and Spam checks).
+- [x] **FR-11**: Exclude input channel from results.
+- [x] **FR-12**: Handle edge cases (fewer than 5 competitors).
 
 ### 3.3 Data Extraction & Pattern Recognition (FR-13 to FR-19)
 - [ ] **FR-13**: Fetch top 10 videos by view count per competitor.

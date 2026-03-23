@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import ChannelRequest
+from pydantic import BaseModel
+from typing import Optional
 from services.youtube_service import (
-    build_channel_dataset,
+    extract_channel_id,
+    load_from_cache,
 )
 from services.analysis_service import analyze_patterns
 from services.openrouter_service import generate_strategy
@@ -9,66 +11,60 @@ from services.openrouter_service import generate_strategy
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
 
+class StrategyRequest(BaseModel):
+    channel_url: str
+    niche_keyword: Optional[str] = None
+
+
 @router.post("/generate")
-async def generate(request: ChannelRequest):
-    """
-    Full pipeline endpoint:
-    1. Build channel dataset (extracts channel, fetches videos, discovers competitors)
-    2. Analyze content patterns across competitors
-    3. Generate AI strategy recommendations
-    Returns everything in one response.
-    """
+async def generate(request: StrategyRequest):
     try:
-        # Step 1: Build full dataset (includes competitor discovery)
-        dataset = build_channel_dataset(request.channel_url, niche_keyword=request.niche_keyword)
+        channel_id = extract_channel_id(request.channel_url)
+        dataset = load_from_cache(channel_id)
 
-        channel_data = dataset.get("channel", {})
-        channel_videos = dataset.get("videos", [])
-        competitors_raw = dataset.get("competitors", [])
+        if not dataset:
+            raise HTTPException(status_code=404, detail="Channel not found in cache")
 
-        # Step 2: Analyze patterns — build list with recent_videos key for analysis_service
-        analysis_input = []
-        for c in competitors_raw:
-            analysis_input.append({"recent_videos": c.get("videos", [])})
-        patterns = analyze_patterns(analysis_input)
+        # Check if competitor discovery has been run
+        if "competitors" not in dataset:
+            raise HTTPException(
+                status_code=400,
+                detail="Run competitor discovery first. Call /competitors/discover before generating strategy."
+            )
 
-        # Step 3: Generate strategy with OpenRouter
-        strategy = generate_strategy(channel_data, patterns, competitors_raw)
+        competitor_data = dataset["competitors"]
 
-        # Build response
+        # Use ONLY strong competitors for strategy
+        strategy_competitors = competitor_data.get("strategy_competitors", [])
+
+        if not strategy_competitors:
+            raise HTTPException(
+                status_code=400,
+                detail="No strong competitors found. Cannot generate meaningful strategy. Try a broader niche keyword."
+            )
+
+        print(f"🎯 Generating strategy based on {len(strategy_competitors)} strong competitors")
+        for c in strategy_competitors:
+            print(f"   → {c['channel_name']} (score: {c['relevance_score']})")
+
+        # Analyze patterns from strong competitors only
+        patterns = analyze_patterns(strategy_competitors)
+
+        # Generate AI strategy
+        strategy = generate_strategy(
+            channel_data=dataset["channel"],
+            patterns=patterns,
+            competitors=strategy_competitors
+        )
+
         return {
-            "channel": {
-                "channel_id": channel_data.get("channel_id", ""),
-                "name": channel_data.get("channel_name", ""),
-                "subscribers": channel_data.get("subscribers", 0),
-                "total_views": channel_data.get("total_views", 0),
-                "video_count": channel_data.get("video_count", 0),
-                "recent_videos": channel_videos,
-            },
-            "competitors": [
-                {
-                    "channel_id": c.get("channel_id", ""),
-                    "name": c.get("channel_name", ""),
-                    "subscribers": c.get("subscribers", 0),
-                    "total_views": c.get("total_views", 0),
-                    "video_count": c.get("video_count", 0),
-                    "avg_views": c.get("avg_views", 0),
-                    "upload_frequency": c.get("upload_frequency", 0.0),
-                    "videos": c.get("videos", []),
-                }
-                for c in competitors_raw
-            ],
-            "patterns": patterns,
-            "strategy": strategy,
+            "channel": dataset["channel"]["channel_name"],
+            "based_on_competitors": [c["channel_name"] for c in strategy_competitors],
+            "competitor_count": len(strategy_competitors),
+            "strategy": strategy
         }
 
-    except ValueError as e:
-        error_msg = str(e)
-        if "quota" in error_msg.lower():
-            raise HTTPException(status_code=429, detail=error_msg)
-        if "not found" in error_msg.lower():
-            raise HTTPException(status_code=404, detail=error_msg)
-        raise HTTPException(status_code=400, detail=error_msg)
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"[strategy/generate] Unexpected error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
