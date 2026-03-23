@@ -7,6 +7,7 @@ supabase-postgres-best-practices/
   SKILL.md       # Main skill file - read this first
   AGENTS.md      # This navigation guide
   CLAUDE.md      # Symlink to AGENTS.md
+  README.md      # Skill overview
   references/    # Detailed reference files
 ```
 
@@ -43,11 +44,12 @@ Reference these guidelines when:
 
 ## How to Use
 
-Read individual rule files for detailed explanations and SQL examples:
+Read `references/_sections.md` first to discover sections, then load individual rule files as needed.
+Examples:
 
 ```
 references/query-missing-indexes.md
-references/schema-partial-indexes.md
+references/query-partial-indexes.md
 references/_sections.md
 ```
 
@@ -66,3 +68,4 @@ Each rule file contains:
 - https://wiki.postgresql.org/wiki/Performance_Optimization
 - https://supabase.com/docs/guides/database/overview
 - https://supabase.com/docs/guides/auth/row-level-security
+- https://supabase.com/docs/guides/database/query-optimization

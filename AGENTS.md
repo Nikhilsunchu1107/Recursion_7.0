@@ -1,14 +1,24 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `frontend/` is the active app (React + Vite).
+- `frontend/` is the React + Vite client app.
 - `frontend/src/` contains runtime code:
   - `main.jsx` bootstraps the app.
-  - `App.jsx` defines router wiring.
+  - `App.jsx` defines router wiring and protected routes.
   - `screens/` contains page-level components (`LandingPage.jsx`, `DashboardOverview.jsx`, etc.).
+  - `components/` contains shared UI and auth guards (`ProtectedRoute`, nav components).
+  - `context/` contains auth context providers.
+  - `lib/` contains API/Supabase client helpers.
   - `assets/` stores local images and SVGs.
 - `frontend/public/` contains static assets served as-is.
-- `server/` exists but is currently empty; treat it as reserved for backend work.
+- `backend/` is an active FastAPI service:
+  - `main.py` app entrypoint and router registration.
+  - `routers/` API endpoints (`channel`, `competitors`, `patterns`, `strategy`).
+  - `services/` business logic and external integrations.
+  - `models/` request/response schemas.
+  - `data/` local data files.
+- `server/` currently exists as a reserved folder (empty).
+- `.agents/skills/` contains local skill packs used by agent tooling.
 - Root-level product docs (for example `SpyGlass_PRD.docx`) describe requirements.
 
 ## Build, Test, and Development Commands
@@ -17,7 +27,7 @@
 - `npm run dev` starts the Vite dev server with HMR.
 - `npm run build` creates the production bundle in `frontend/dist/`.
 - `npm run preview` serves the production build locally.
-- `npm run lint` runs ESLint over `js/jsx` files.
+- `npm run lint` runs ESLint over the frontend codebase.
 
 **Backend Commands (run from `backend/`):**
 - The project uses `.venv` as the **primary** Python environment.
@@ -33,10 +43,16 @@
 - Keep route paths snake_case where already established (example: `/dashboard_overview`).
 - Prefer Tailwind utility classes; keep design tokens aligned with `tailwind.config.js`.
 - Linting source of truth: `frontend/eslint.config.js`.
+- Python backend conventions:
+  - Keep routers thin; place reusable logic in `backend/services/`.
+  - Keep Pydantic schemas in `backend/models/schemas.py`.
+  - Use explicit imports and type hints where practical.
 
 ## Testing Guidelines
 - No automated test framework is configured yet.
-- Minimum pre-PR quality bar: `npm run lint` + manual route checks in `npm run dev`.
+- Minimum pre-PR quality bar:
+  - Frontend: `npm run lint` + manual route checks in `npm run dev`.
+  - Backend: start `uvicorn main:app --reload` and verify `/docs` plus changed endpoints.
 - If you add tests, place them under `frontend/src/` using `*.test.jsx` naming and include a script update in `package.json`.
 
 ## Commit & Pull Request Guidelines
@@ -50,4 +66,5 @@
 
 ## Security & Configuration Tips
 - Never commit secrets or `.env` files.
+- Keep `.env.example` updated when adding new configuration keys.
 - Keep dependency updates scoped and review `package-lock.json` diffs before merging.
