@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+google-api-python-client
+python-dotenv
+httpx
+pydantic
+isodate
