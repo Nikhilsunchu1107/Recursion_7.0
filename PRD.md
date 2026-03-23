@@ -90,6 +90,10 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 - **FR-08**: Filter results to channels within 0.1x–10x the input channel subscriber count (High)
 - **FR-09**: Score similarity using keyword overlap + subscriber proximity + upload cadence (High)
 - **FR-10**: Return the top 5–8 most similar channels with similarity scores (High)
+  - *Authenticity Verification*: The system must filter out bots and dead channels using the following methods:
+    1. **Activity Check**: Ensure the channel has published a video within the last 90 days.
+    2. **Engagement Check**: Validate that recent videos meet minimum thresholds for median views-to-subscribers (> 1%), likes-to-views, and comments-to-views ratios to ensure genuine audience interaction.
+    3. **Spam Check**: Detect and remove channels with highly repetitive, auto-generated video titles.
 - **FR-11**: Exclude the input channel from competitor results (High)
 - **FR-12**: Handle edge case: fewer than 5 competitors found — return all available (Medium)
 

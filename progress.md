@@ -31,7 +31,7 @@ This document tracks the implementation progress of features defined in the `PRD
 - [ ] **FR-07**: Autonomously search YouTube for channels using keywords.
 - [ ] **FR-08**: Filter channels by 0.1x–10x subscriber proximity.
 - [ ] **FR-09**: Score similarity (keyword + subs + cadence).
-- [ ] **FR-10**: Return top 5–8 similar channels.
+- [ ] **FR-10**: Return top 5–8 similar, authentic channels (Activity, Engagement, and Spam checks).
 - [ ] **FR-11**: Exclude input channel from results.
 - [ ] **FR-12**: Handle edge cases (fewer than 5 competitors).
 
