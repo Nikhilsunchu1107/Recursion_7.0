@@ -5,7 +5,6 @@ import { useAuth } from '../context/auth-context';
 const navItems = [
   { to: '/dashboard_overview', icon: 'dashboard', label: 'Dashboard' },
   { to: '/competitor_discovery', icon: 'search_check', label: 'Competitor Discovery' },
-  { to: '/search_analyze_landing', icon: 'analytics', label: 'Channel Analysis' },
   { to: '/pattern_insights', icon: 'insights', label: 'Pattern Insights' },
   { to: '/growth_strategy', icon: 'trending_up', label: 'Growth Strategy' },
   { to: '/opportunity_gaps', icon: 'lightbulb', label: 'Opportunity Gaps' },

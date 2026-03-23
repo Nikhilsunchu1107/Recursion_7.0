@@ -1,4 +1,12 @@
+<<<<<<< Updated upstream
 import os
+=======
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+print("CURRENT API KEY:", os.getenv("YOUTUBE_API_KEY"))
+>>>>>>> Stashed changes
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

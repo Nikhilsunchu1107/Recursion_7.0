@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 export default function LandingPage() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
-  const { signInWithProvider } = useAuth();
+  const { signInWithProvider, isAuthenticated } = useAuth();
   const [showEmailInput, setShowEmailInput] = useState(false);
   const [email, setEmail] = useState('');
   const [emailSent, setEmailSent] = useState(false);
@@ -31,7 +31,11 @@ export default function LandingPage() {
 
   const handleAnalyze = (e) => {
     e.preventDefault();
-    navigate('/dashboard_overview');
+    if (isAuthenticated) {
+      navigate('/dashboard_overview');
+    } else {
+      document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -45,20 +49,7 @@ export default function LandingPage() {
           <span className="text-xl font-bold tracking-tight text-[#e2e2eb]" style={{ fontFamily: 'Manrope' }}>Competitor Spy</span>
           <span className="hidden md:inline-block text-[10px] uppercase tracking-widest text-[#adc6ff] font-bold px-2 py-0.5 rounded bg-[#adc6ff]/10 border border-[#adc6ff]/20">Intelligence Layer</span>
         </div>
-        <div className="hidden md:flex items-center gap-8">
-          <a className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium" href="#">About</a>
-          <a className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium" href="#">Pricing</a>
-          <a className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium" href="#">Solutions</a>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-[#9ea0a3] hover:text-[#e2e2eb] transition-all text-sm font-medium hidden sm:block">Login</button>
-          <button
-            onClick={handleAnalyze}
-            className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-6 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#adc6ff]/10"
-          >
-            Get Started
-          </button>
-        </div>
+
       </nav>
 
       {/* Main Hero Section */}
@@ -116,7 +107,7 @@ export default function LandingPage() {
           </form>
 
           {/* Login / Sign-up Options */}
-          <div className="pt-4 space-y-6">
+          <div id="login-section" className="pt-4 space-y-6">
             <div className="flex items-center gap-4 max-w-sm mx-auto">
               <div className="flex-1 h-px bg-[#424754]/30"></div>
               <span className="text-xs font-bold text-[#8c909f] uppercase tracking-wider">Or sign in to save results</span>
