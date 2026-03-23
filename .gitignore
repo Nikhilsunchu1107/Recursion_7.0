@@ -2,6 +2,7 @@ SpyGlass_PRD.docx
 backend/.env
 frontend/.env
 backend/data/cache.json
+backend/venv/
 .venv/
 __pycache__/
 
