@@ -284,6 +284,9 @@ def get_video_details(video_ids: list) -> dict:
             keywords = _extract_top_keywords(title, 5)
             
             stats_map[vid] = {
+                "title": title,
+                "published_at": snippet.get("publishedAt", ""),
+                "thumbnail": snippet.get("thumbnails", {}).get("medium", {}).get("url", ""),
                 "views": int(stats.get("viewCount", 0)),
                 "likes": int(stats.get("likeCount", 0)),
                 "comments": int(stats.get("commentCount", 0)),
