@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import channel, competitors, patterns, strategy
+from routers import channel, competitors, patterns, strategy, analysis
 
 app = FastAPI(
     title="YouTube Competitor Analysis API",
@@ -23,6 +23,7 @@ app.include_router(channel.router)
 app.include_router(competitors.router)
 app.include_router(patterns.router)
 app.include_router(strategy.router)
+app.include_router(analysis.router)
 
 
 @app.get("/")
