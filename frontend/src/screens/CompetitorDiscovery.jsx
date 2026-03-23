@@ -1,0 +1,356 @@
+
+import React from 'react';
+import parse from 'html-react-parser';
+
+// Use a simple template literal to safely inject HTML without needing raw loaders.
+// Since HTML may contain backticks, we escape them.
+const htmlString = `
+<!-- SideNavBar (Desktop Shell) -->
+<aside class="fixed left-0 top-0 h-screen z-40 bg-[#191b22] dark:bg-[#191b22] hidden md:flex flex-col w-64">
+<div class="px-6 py-8">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-xl" style="font-variation-settings: 'FILL' 1;">radar</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-[#e2e2eb] font-headline">Competitor Spy</h1>
+<p class="text-[10px] uppercase tracking-widest text-primary/60 font-bold">Intelligence Layer</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#adc6ff] bg-[#33343b]/60 backdrop-blur-md rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="search_check">search_check</span>
+<span class="text-sm">Competitor Discovery</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="text-sm font-medium">Channel Analysis</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="text-sm font-medium">Pattern Insights</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+<span class="text-sm font-medium">Growth Strategy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 transition-all duration-200 group" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="text-sm font-medium">Opportunity Gaps</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="bg-surface-container-lowest/50 rounded-xl p-4 flex items-center gap-3">
+<img alt="User Profile" class="w-8 h-8 rounded-full bg-surface-container-high" data-alt="User profile avatar icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAHPkaRoJSykslzbaGsB_SdXASlYrkOUjAC_ZAs6ZhIMYD8qk2gZ12WIzrmdPYrhnx0bzC4BqQPrjvzkdAaK5bFWA7IHDLVBq8ICSbjqAeAws1Wd0HEdnAbpkCmLIxhGQOj5Bi5hAqFc-i8-_ZnJUg6ynl90HjieADVph14eQfKxi5WQ8zhcYJ4MY6Vb0cB8oaIhW5V_x3VAm1CbkpiJrlM23huPIIjZGnOkQK6hYiyafL8hWntD4HZu5HUmrU127182FQIOJQXED8"/>
+<div class="overflow-hidden">
+<p class="text-xs font-bold text-on-surface truncate">Alex Rivera</p>
+<p class="text-[10px] text-on-surface-variant truncate">Premium Plan</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (Shell) -->
+<header class="flex justify-between items-center w-full px-6 py-4 ml-0 md:ml-64 max-w-[calc(100%-16rem)] bg-[#111319]/60 backdrop-blur-xl fixed top-0 z-30 shadow-[0_8px_32px_rgba(173,198,255,0.06)]">
+<div class="flex items-center gap-4 flex-1">
+<span class="md:hidden text-lg font-black text-[#e2e2eb] font-headline">Competitor Spy</span>
+<div class="relative w-full max-w-md hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-on-surface-variant/50" placeholder="Search competitors..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-[#1e1f26] rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-on-primary-container px-6 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/10">
+                Analyze
+            </button>
+<button class="md:hidden p-2 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-20 md:pb-8 ml-0 md:ml-64 min-h-screen px-6 lg:px-12">
+<section class="max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<h2 class="text-4xl font-extrabold font-headline tracking-tight text-on-surface">Competitor Discovery</h2>
+<p class="text-on-surface-variant max-w-lg">Identify top-performing channels within your niche and uncover the secrets behind their engagement velocity.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container rounded-lg text-sm font-medium border border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                        Filter
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container rounded-lg text-sm font-medium border border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="sort">sort</span>
+                        Sort by Engagement
+                    </button>
+</div>
+</div>
+<!-- Bento-Style Profile Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Competitor Card 1 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Workspace setup with high-end tech gear" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4AcnyjJVC98OsiqllueKwsTZt9CPakPEqL56ao48yzWDkYVkg_v0loK1bnM_3EjbmgithVVky9vDf50oi308JN2E-BvxHNnjZ-72cmTSyemJp-P05kXy-ThN3rAJlx1gRNWqb5wQB8D31QXdyb5pQN52IviM0mkmfYBhxdgcs0K5EEey7BisQkMoOBMx_jm29qLWk4opRqF4KtIsTN5B2kEKv4cuWKKCbo1oTtkC32h7Plm2MOyqnHp8y5m3x09iKcnF8NN5d-9W8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-primary overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Tech channel creator profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_MIDDJk3TqO90IgDQzEAEpRAh6sfotyUjicnbj9ZK2R40EDykfc5PSSjTK6si1-W4o2wr03myZLGm1P-3NsEcnmBBJKUHyQcL1LDUJqd1WVJMhYN1ARQyiaBYM7nK_7Ylha-nHMpyQz-ULQLJXx09tGACtXxahMHEi6_HARGO4UjpRRq8eAyGZjJph9jploU_nxrjI7S6f0PN8Sms6YzT_1MgEhOUhfRI9GOoF9IUlC3lx0qLXMHcW_sT04XRc0qYueJWFdrzAgMQ"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">ProTech Mastery</h3>
+<p class="text-xs text-primary font-medium">@protech_official</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">1.2M</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">240K</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Productivity</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">Workflows</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">Tech Reviews</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Competitor Card 2 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Cozy library setting with books" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnZ_gHtewoaxLnG64BXLHhANx6TH4SXZL9ecPlMLP8o1Kn8zk7Zmt1_f-T_kwdUKEZ3cbxxbqbsfwEMamgW7i9vOzmjn0Vg_nV-lUK3bQSHREQp7xkV9Pv12sn4XXQcc3jvwgxb7ed3ZvaaDaImklKYl1nTX_1V0DM4vqAMSrEZ5pX7Lpv0BRHM6NKcokAtqb9cY2rKpzA19uM7QH0XeyoEUepYDOi3rNoOrknReuoeTIP-JVb2szXdZIS5fGdOUNM6Rel33tDMjNi"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-secondary overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Study tips channel profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbnbI47nMRuODEsOy9ZZB0b5oXWUjvgU52MMgLJ7bvt_ET_0v_-EfUJ6J1nK6UVvwBYP3Ctb2DYvF9a3pgPrB-blvAR0kvXz98TlQzmJPcfEidN5JR4AqPQ-yto_4o8XDazrDt9XU_kW8vDT3WEpQ78K1iS-n9ow31l_S9RQzBqutxT3NI_p8nxvyBqVriZKc0SnsBOvFeaGwGJAAK4GZULd7DM5m1EZPyogmu084dLZiiIOm-AgezVBKYjfJmMM9Q7r2IGpn-TZNh"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">Study Theory</h3>
+<p class="text-xs text-secondary font-medium">@study_with_me</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">850K</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">510K</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Study Tips</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">Education</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">Focus</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Competitor Card 3 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Circuit board close up neon lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbQdoRA-MwESYbU0iKQi_iyorUG0prInt6sOQowhVjIKuNA99wMrURcgOM7n8w8UttVOUi-oUd9yuTB2u9-PqA1ZJgH_ybJibSZV0JJhih73xR0OdOEfQXoz72Of7OtZD9d-yTUwBR4rLTZCfkhEv9o6LfjQnX42PNf4mLznisxujUvjamR4vRVVTO19vNDbnNcrPkcmwLc4j51ihiy4hiw_orsQzIY-Q1wfLkTlg0Beyb0cuw6RINhXDHqJ9kRtGhDuySCWD1Cazy"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-tertiary overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Coding channel creator profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2ePasINwVmvBvq_8UdNCeFTpjkdx8whHTGZFbX8WUUAJGX15cVch_RBSc-u0GD8MG_XF8NOuM1EcDF7zweHs_BwvnjKi6wyjCS0WeEyHg9cDNgp_0ZUf_5ias-fO4cKZ2aQYAiTW-PHeeJSHtnnLGY4LRJGcpqmP8p5uaPMjgJJBTZ85SYgfUPKvOFywwCKFI-Rs0BdUcfbI2qcaU2VZ6FNdg2LHItYZkbBidXyVrwY6kLtQ1oMxQ7MVwDNVYaAFGFy1_Vw8hl4I_"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">Code Devotion</h3>
+<p class="text-xs text-tertiary font-medium">@codedev_ninja</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">420K</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">115K</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Development</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">AI</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">Tutorials</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Competitor Card 4 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Financial charts on a digital screen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh0dZ-tUmcaZ4xHfQcuIb0dyk9uY2CY4EmPmQh8b374MVL7NCBJ0waSl2_ktqeA8QD2Z7Ymp8JHbhwVySdmf3NpROLxIqB1SkHUdy19VugvkO0tu-3d4Dg55u9M9WpeU-brMjysZGPWroe4MhI6IcfYLQk7K2hiHeJuhYUmCeobYggClg3UdOf4gzH_mZArDS2_yUxMegtE3J15M-4CpuONKNn5zbo0DdNYzaHe7dzJr8YZH1jUYk7fizlxMGWfxIqQVD-Q8ChTl45"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-primary-container overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Finance channel profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR_ck6RJ0b9mzwOZ4wQreaIq9vHG0Lyj9jeTiFaVWOeOrunQbb7LR8WaCCo0WGl8-LxP8Z10tZcAEpfHU5jztkAW9-sDLydV4Cq3-tWeQnU7OXBkNS2QoY_dzydBLsyO5A0HUXHVQHIpC_CofT4NgkALnIgCTQsdTDqpEaRolddP_uRIehCq3MQJBQxfUdNsxU-y_KEeyhnhSLlnS0rZQiJVf4nXx-Q2ylOVI4Q8XVw0tiR7ur11nUtrpgyOXvztdqwOq02xlRpz3a"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">Finance Mind</h3>
+<p class="text-xs text-primary-container font-medium">@finance_mindset</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">2.1M</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">680K</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Investing</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">Markets</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">Budgeting</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Competitor Card 5 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Modern minimalist gym interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6-pW7jpm-zeXenhkTM5Qat_2__c5HKZo46VMvXQ60P1554ZwXOtRGm4pkr0NNfalc8E4eqNzd1b6Wa92bM2qZUcePWbI4vcpjcTZIWuVs7hS8EIzt4OrpK2TjBKzSqHn4Qf3-BIeSRLrrDbEMHGniAGYBTTXUUR38Th-lF3rxg94IkTgmF6jyKQk0E3Bsul2hX8R-xKv90XiXl-fLEd5FeguTc2nn18z98O-iaP3wB4ioStUfDQcC4qbEUmMcTjVP3rxVrz0qq9G0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-error overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Fitness channel creator profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa_ZAAE0WJ2GdsyiKChinKxJpdPrmTohP-2PBGuV9deiJfK4X4TZDhkXOg_vC5GMz8o9xPiNcY0bibJiOf6WQKISaMyQ7EDnVbDOHsLq-S6wSw1Ulf829-_MBKcZqnIlmk-J0tonevSX7LiGn0iR63yba0JzYirEeK61aVfhKc6InaAEBobioQwU3oRkgH9WOznPc_FJD_N2msyeJ7X7JcPuxPeHb4P56wh4s8a-M0fdfrYJAZJB2acZwC0JcZwskKyabEBvcupd__"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">Fit Evolution</h3>
+<p class="text-xs text-error font-medium">@fit_evo_yt</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">3.4M</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">1.1M</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Fitness</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">Health</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">Motivation</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+<!-- Competitor Card 6 -->
+<div class="glass-card rounded-xl p-1 overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-black/20 group">
+<div class="relative h-40 w-full rounded-t-lg overflow-hidden bg-surface-container-lowest">
+<img alt="Channel Preview" class="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-500" data-alt="Art studio with paint splashes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNFWsgVXioWYPXEMFByI7uXfCNqRPTicsNlCeKW0s-AEX1s17AOmePV4wlN7ZI988rQpEuvOAYEGcYLEkRbTF3bTOzMSjp6-7VMWDll8iPlXlLFAb2PSAI58Xq4bSuKfSyf_dA7_gzd9PdWSERIlktXxFQVYti4iydNd8ob6juhijDGo1fQ7CPOTZ2vABD15jdnnJHf0rK2rMsgM9OzXj1CpIZvH2kJucjO_ti_F90z0y2xEakzJry6SUXpoyKHS7wV-Bh_DYpom2J"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full border-2 border-primary overflow-hidden bg-surface-container-high">
+<img alt="Profile" data-alt="Creative arts channel profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB52PC4hszpR5n8H7KeBmoAP4FVIu2fL0wit1_Q29Ea3nmCYH0ITwjQnkiB4UAIxtdJ9fQ7Zk9p2QZ_Kch_ZDn2pSjKJosOm-YXZuccNPMMobCs58mhRSenpPwrXDRprqyk-l5mnScdf1xapDFfQ6X5W_d1vnQhnhQmzkS9PZvYrfJNmfig1B3yd-L8DgtO6hjeWXKRbZAwV0h4taBjc_i5SVwl5lce6hqkfZxgLYfId8jjzVOz6lvYzAGf4pvbdsRTeuFRDUoieJue"/>
+</div>
+<div>
+<h3 class="font-bold font-headline text-lg text-on-surface leading-tight">Creative Arc</h3>
+<p class="text-xs text-primary font-medium">@creative_arc_visuals</p>
+</div>
+</div>
+</div>
+<div class="p-5 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Subscribers</p>
+<p class="text-xl font-bold font-headline text-on-surface">540K</p>
+</div>
+<div class="bg-surface-container-lowest rounded-lg p-3">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold mb-1">Avg Views</p>
+<p class="text-xl font-bold font-headline text-on-surface">88K</p>
+</div>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-full border border-primary/20">Digital Art</span>
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full border border-secondary/20">Design</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded-full border border-tertiary/20">VFX</span>
+</div>
+<button class="w-full py-3 bg-surface-container-highest/60 hover:bg-surface-container-highest text-on-surface font-bold text-sm rounded-lg transition-all border border-outline-variant/5">
+                            View Details
+                        </button>
+</div>
+</div>
+</div>
+<!-- Pagination/Footer -->
+<div class="mt-12 flex justify-center items-center gap-4">
+<button class="p-2 bg-surface-container rounded-lg text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-lg bg-primary text-on-primary font-bold">1</button>
+<button class="w-10 h-10 rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors font-bold">2</button>
+<button class="w-10 h-10 rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-colors font-bold">3</button>
+</div>
+<button class="p-2 bg-surface-container rounded-lg text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Shell) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center p-2 md:hidden bg-[#1e1f26]/80 backdrop-blur-lg border-t border-[#33343b]/15 shadow-2xl rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium font-body">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#adc6ff] bg-[#adc6ff]/10 rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined" data-icon="search" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="text-[10px] font-medium font-body">Discovery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+<span class="text-[10px] font-medium font-body">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9ea0a3]" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-[10px] font-medium font-body">Gaps</span>
+</a>
+</nav>
+`;
+
+export default function CompetitorDiscovery() {
+  return parse(htmlString);
+}

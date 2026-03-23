@@ -1,0 +1,239 @@
+
+import React from 'react';
+import parse from 'html-react-parser';
+
+// Use a simple template literal to safely inject HTML without needing raw loaders.
+// Since HTML may contain backticks, we escape them.
+const htmlString = `
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-screen z-40 bg-[#191b22] dark:bg-[#191b22] hidden md:flex flex-col w-64">
+<div class="px-6 py-8">
+<h1 class="text-xl font-bold tracking-tight text-[#e2e2eb] font-headline">Competitor Spy</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] text-primary/60 font-bold mt-1">Intelligence Layer</p>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl">search_check</span>
+<span class="text-sm font-medium">Competitor Discovery</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl">analytics</span>
+<span class="text-sm font-medium">Channel Analysis</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl">insights</span>
+<span class="text-sm font-medium">Pattern Insights</span>
+</a>
+<!-- Active State Logic: Growth Strategy matches current screen -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#adc6ff] bg-[#33343b]/60 backdrop-blur-md rounded-lg font-bold" href="#">
+<span class="material-symbols-outlined text-xl">trending_up</span>
+<span class="text-sm">Growth Strategy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#9ea0a3] hover:text-[#e2e2eb] transition-colors hover:bg-[#33343b]/40 rounded-lg group" href="#">
+<span class="material-symbols-outlined text-xl">lightbulb</span>
+<span class="text-sm font-medium">Opportunity Gaps</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="flex items-center gap-3 p-3 rounded-xl bg-surface-container-lowest">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary text-xs font-bold">JD</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">John Doe</span>
+<span class="text-[10px] text-on-surface-variant">Pro Plan</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-0 md:ml-64 min-h-screen pb-24 md:pb-8">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-6 py-4 bg-[#111319]/60 backdrop-blur-xl sticky top-0 z-30 shadow-[0_8px_32px_rgba(173,198,255,0.06)]">
+<div class="flex items-center gap-4 flex-1">
+<span class="md:hidden text-lg font-black text-[#e2e2eb]">Competitor Spy</span>
+<div class="hidden md:flex items-center bg-surface-container-lowest rounded-full px-4 py-2 w-full max-w-md">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-on-surface-variant/50" placeholder="Search insights..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-on-primary-container px-6 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-all">Analyze</button>
+</div>
+</header>
+<!-- Growth Content Canvas -->
+<div class="max-w-7xl mx-auto px-6 pt-8">
+<div class="mb-10">
+<h2 class="font-headline text-3xl font-extrabold text-on-surface tracking-tight">Growth Strategy</h2>
+<p class="text-on-surface-variant mt-2 max-w-2xl">AI-curated recommendations based on cross-channel competitor performance and market velocity.</p>
+</div>
+<!-- Recommendations Panel -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-12">
+<div class="lg:col-span-12">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline text-xl font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                            Actionable Recommendations
+                        </h3>
+<div class="flex gap-2">
+<span class="text-xs text-on-surface-variant font-medium bg-surface-container px-3 py-1 rounded-full">Updated 4h ago</span>
+</div>
+</div>
+<!-- Bento Grid for Strategy Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+<!-- Strategy Card 1 -->
+<div class="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col h-full hover:bg-surface-container-high/40 transition-all group">
+<div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-6">
+<span class="material-symbols-outlined">video_library</span>
+</div>
+<h4 class="font-headline text-lg font-bold mb-2 group-hover:text-primary transition-colors">Post 2–3 Videos/Week</h4>
+<p class="text-sm text-on-surface-variant mb-6 flex-grow">Your top 3 competitors increased engagement by 42% by adopting a high-frequency short-form video rhythm.</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="px-3 py-1 bg-error-container/20 text-error text-[10px] font-bold rounded-full uppercase tracking-wider">High Priority</span>
+<button class="text-primary material-symbols-outlined">arrow_forward_ios</button>
+</div>
+</div>
+<!-- Strategy Card 2 -->
+<div class="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col h-full hover:bg-surface-container-high/40 transition-all group">
+<div class="w-12 h-12 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary mb-6">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<h4 class="font-headline text-lg font-bold mb-2 group-hover:text-secondary transition-colors">Cross-Platform Sync</h4>
+<p class="text-sm text-on-surface-variant mb-6 flex-grow">Coordinate LinkedIn insights with Twitter threads to capture professional cross-traffic before competitors do.</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="px-3 py-1 bg-tertiary-container/20 text-tertiary text-[10px] font-bold rounded-full uppercase tracking-wider">Medium</span>
+<button class="text-secondary material-symbols-outlined">arrow_forward_ios</button>
+</div>
+</div>
+<!-- Strategy Card 3 -->
+<div class="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col h-full hover:bg-surface-container-high/40 transition-all group">
+<div class="w-12 h-12 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary mb-6">
+<span class="material-symbols-outlined">forum</span>
+</div>
+<h4 class="font-headline text-lg font-bold mb-2 group-hover:text-tertiary transition-colors">Direct Response SEO</h4>
+<p class="text-sm text-on-surface-variant mb-6 flex-grow">Shift ad spend to high-intent "vs" keywords where competitors are under-bidding by 15%.</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="px-3 py-1 bg-error-container/20 text-error text-[10px] font-bold rounded-full uppercase tracking-wider">High Priority</span>
+<button class="text-tertiary material-symbols-outlined">arrow_forward_ios</button>
+</div>
+</div>
+<!-- Strategy Card 4 -->
+<div class="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col h-full hover:bg-surface-container-high/40 transition-all group">
+<div class="w-12 h-12 rounded-xl bg-surface-bright flex items-center justify-center text-on-surface-variant mb-6">
+<span class="material-symbols-outlined">campaign</span>
+</div>
+<h4 class="font-headline text-lg font-bold mb-2 group-hover:text-on-surface transition-colors">Micro-Influencer Blitz</h4>
+<p class="text-sm text-on-surface-variant mb-6 flex-grow">Partner with 5 niche accounts in the DevOps space; competitors are ignoring this sub-vertical.</p>
+<div class="flex items-center justify-between mt-auto">
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded-full uppercase tracking-wider">Low</span>
+<button class="text-on-surface-variant material-symbols-outlined">arrow_forward_ios</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Opportunity Gap Section -->
+<div class="space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
+<h3 class="font-headline text-xl font-bold">Opportunity Gaps</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Gap Card 1 -->
+<div class="bg-surface-container-low rounded-xl p-8 border-l-4 border-primary relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all"></div>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded flex items-center gap-1">
+                                🚀 Low Competition + High Demand
+                            </span>
+</div>
+<h4 class="font-headline text-2xl font-extrabold mb-3">Serverless Security</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Competitors focus on infrastructure but miss runtime security topics. 800% search growth this quarter.</p>
+<div class="mt-6 flex items-center gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Search Volume</span>
+<span class="text-lg font-headline font-bold text-on-surface">12.5k/mo</span>
+</div>
+<div class="h-8 w-px bg-outline-variant/20"></div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Gap Score</span>
+<span class="text-lg font-headline font-bold text-primary">94/100</span>
+</div>
+</div>
+</div>
+<!-- Gap Card 2 -->
+<div class="bg-surface-container-low rounded-xl p-8 border-l-4 border-secondary relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-secondary/5 rounded-full blur-2xl group-hover:bg-secondary/10 transition-all"></div>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] font-bold rounded flex items-center gap-1">
+                                🚀 Low Competition + High Demand
+                            </span>
+</div>
+<h4 class="font-headline text-2xl font-extrabold mb-3">AI Integration Guide</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Lack of 'How-To' content for mid-market CTOs. Primary competitors are too technical or too abstract.</p>
+<div class="mt-6 flex items-center gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Search Volume</span>
+<span class="text-lg font-headline font-bold text-on-surface">8.2k/mo</span>
+</div>
+<div class="h-8 w-px bg-outline-variant/20"></div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Gap Score</span>
+<span class="text-lg font-headline font-bold text-secondary">88/100</span>
+</div>
+</div>
+</div>
+<!-- Gap Card 3 -->
+<div class="bg-surface-container-low rounded-xl p-8 border-l-4 border-tertiary relative overflow-hidden group">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-tertiary/5 rounded-full blur-2xl group-hover:bg-tertiary/10 transition-all"></div>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2 py-0.5 bg-tertiary/10 text-tertiary text-[10px] font-bold rounded flex items-center gap-1">
+                                🚀 Low Competition + High Demand
+                            </span>
+</div>
+<h4 class="font-headline text-2xl font-extrabold mb-3">FinOps Automation</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Emerging trend in cost-optimization clusters. No competitor has dedicated video content yet.</p>
+<div class="mt-6 flex items-center gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Search Volume</span>
+<span class="text-lg font-headline font-bold text-on-surface">4.1k/mo</span>
+</div>
+<div class="h-8 w-px bg-outline-variant/20"></div>
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase font-bold">Gap Score</span>
+<span class="text-lg font-headline font-bold text-tertiary">82/100</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Anchor (Mobile only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center p-2 bg-[#1e1f26]/80 backdrop-blur-lg md:hidden rounded-t-xl border-t border-[#33343b]/15 shadow-2xl">
+<a class="flex flex-col items-center justify-center text-[#9ea0a3] px-3 py-1" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9ea0a3] px-3 py-1" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="text-[10px] font-medium">Discovery</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#9ea0a3] px-3 py-1" href="#">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="text-[10px] font-medium">Analysis</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#adc6ff] bg-[#adc6ff]/10 rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="text-[10px] font-medium">Gaps</span>
+</a>
+</nav>
+<!-- Contextual FAB (Only on Home/Dashboard, Suppressed here as per rules) -->
+`;
+
+export default function GrowthStrategy() {
+  return parse(htmlString);
+}
