@@ -2,3 +2,10 @@ SpyGlass_PRD.docx
 backend/.env
 frontend/.env
 backend/data/cache.json
+
+# Cache files
+**/cache.json
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/

@@ -1,188 +1,53 @@
 import os
 import re
 import json
-import isodate
 import requests
 from collections import Counter
 from datetime import datetime, timedelta
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from dotenv import load_dotenv
 
 load_dotenv()
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-
 CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "cache.json")
+os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
 
-
-def get_youtube_client():
-    return build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
-
+STOP_WORDS = {
+    "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "is", "it", 
+    "how", "what", "why", "with", "your", "you", "my", "i", "we", "this", 
+    "that", "from", "or", "be", "are", "was", "about", "our", "us", "all", 
+    "more", "get", "can", "will", "have", "has", "just", "also", "new", 
+    "out", "up", "so", "do", "its", "by", "but", "not", "if", "as", "into"
+}
 
 # ---------------------------------------------------------------------------
-# Core pipeline functions
+# Helpers
 # ---------------------------------------------------------------------------
 
-def extract_channel_id(url: str) -> str:
-    """
-    Extract channel ID from YouTube URL.
-    Handles:
-      - https://www.youtube.com/@handle
-      - https://www.youtube.com/channel/UCxxxxxx
-    """
-    # Direct channel ID format
-    match = re.search(r"/channel/(UC[\w-]+)", url)
-    if match:
-        return match.group(1)
+def parse_duration_to_minutes(duration: str) -> float:
+    """Parse ISO 8601 duration string like PT8M30S to minutes float."""
+    match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration)
+    if not match: return 0.0
+    hours = int(match.group(1) or 0)
+    minutes = int(match.group(2) or 0)
+    seconds = int(match.group(3) or 0)
+    return round(hours * 60 + minutes + seconds / 60, 2)
 
-    # @handle format
-    match = re.search(r"/@([\w.-]+)", url)
-    if match:
-        handle = match.group(1)
-        try:
-            youtube = get_youtube_client()
-            response = youtube.search().list(
-                part="snippet",
-                q=f"@{handle}",
-                type="channel",
-                maxResults=1,
-            ).execute()
-            items = response.get("items", [])
-            if items:
-                return items[0]["snippet"]["channelId"]
-        except HttpError as e:
-            if e.resp.status == 403:
-                raise ValueError("YouTube API quota exceeded. Please try again tomorrow.")
-            raise ValueError(f"YouTube API error: {e}")
-
-    raise ValueError(f"Could not extract channel ID from URL: {url}")
-
-
-def get_uploads_playlist_id(channel_id: str) -> dict:
-    """Return channel info + uploads playlist ID."""
+def save_to_cache(channel_id: str, data: dict):
+    """Save dataset to data/cache.json."""
     try:
-        youtube = get_youtube_client()
-        response = youtube.channels().list(
-            part="snippet,statistics,contentDetails",
-            id=channel_id,
-        ).execute()
+        with open(CACHE_FILE, "r") as f:
+            cache = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        cache = {}
 
-        items = response.get("items", [])
-        if not items:
-            raise ValueError(f"Channel not found. Please check the URL.")
+    cache[channel_id] = data
 
-        channel = items[0]
-        snippet = channel["snippet"]
-        stats = channel["statistics"]
-        content = channel["contentDetails"]
-
-        return {
-            "channel_id": channel_id,
-            "channel_name": snippet["title"],
-            "description": snippet.get("description", ""),
-            "subscribers": int(stats.get("subscriberCount", 0)),
-            "total_views": int(stats.get("viewCount", 0)),
-            "video_count": int(stats.get("videoCount", 0)),
-            "uploads_playlist_id": content["relatedPlaylists"]["uploads"],
-        }
-    except HttpError as e:
-        if e.resp.status == 403:
-            raise ValueError("YouTube API quota exceeded. Please try again tomorrow.")
-        if e.resp.status == 404:
-            raise ValueError("Channel not found. Please check the URL.")
-        raise
-
-
-def get_video_ids(playlist_id: str, max_results: int = 20) -> list:
-    """Return list of dicts with video_id and title from a playlist."""
-    try:
-        youtube = get_youtube_client()
-        video_items = []
-        next_page_token = None
-
-        while len(video_items) < max_results:
-            playlist_response = youtube.playlistItems().list(
-                part="contentDetails,snippet",
-                playlistId=playlist_id,
-                maxResults=min(max_results - len(video_items), 50),
-                pageToken=next_page_token,
-            ).execute()
-
-            for item in playlist_response.get("items", []):
-                video_items.append({
-                    "video_id": item["contentDetails"]["videoId"],
-                    "title": item["snippet"]["title"],
-                })
-
-            next_page_token = playlist_response.get("nextPageToken")
-            if not next_page_token:
-                break
-
-        return video_items
-    except HttpError as e:
-        if e.resp.status == 403:
-            raise ValueError("YouTube API quota exceeded. Please try again tomorrow.")
-        raise
-
-
-def get_video_stats(video_ids: list) -> list:
-    """Return views, likes, comments, duration, published_at per video."""
-    if not video_ids:
-        return []
-
-    try:
-        youtube = get_youtube_client()
-        videos = []
-
-        # video_ids can be a list of strings or list of dicts
-        ids = []
-        for v in video_ids:
-            if isinstance(v, dict):
-                ids.append(v["video_id"])
-            else:
-                ids.append(v)
-
-        for i in range(0, len(ids), 50):
-            batch = ids[i : i + 50]
-            video_response = youtube.videos().list(
-                part="snippet,statistics,contentDetails",
-                id=",".join(batch),
-            ).execute()
-
-            for item in video_response.get("items", []):
-                snippet = item["snippet"]
-                stats = item.get("statistics", {})
-                duration_iso = item["contentDetails"]["duration"]
-
-                try:
-                    duration = str(isodate.parse_duration(duration_iso))
-                except Exception:
-                    duration = duration_iso
-
-                videos.append({
-                    "video_id": item["id"],
-                    "title": snippet["title"],
-                    "views": int(stats.get("viewCount", 0)),
-                    "likes": int(stats.get("likeCount", 0)),
-                    "comments": int(stats.get("commentCount", 0)),
-                    "duration": duration,
-                    "published_at": snippet["publishedAt"],
-                })
-
-        return videos
-    except HttpError as e:
-        if e.resp.status == 403:
-            raise ValueError("YouTube API quota exceeded. Please try again tomorrow.")
-        raise
-
-
-# ---------------------------------------------------------------------------
-# Cache helpers
-# ---------------------------------------------------------------------------
+    with open(CACHE_FILE, "w") as f:
+        json.dump(cache, f, indent=2)
 
 def load_from_cache(channel_id: str) -> dict | None:
-    """Load cached channel data if it exists and is less than 24 hours old."""
+    """Load from data/cache.json if not stale."""
     try:
         with open(CACHE_FILE, "r") as f:
             cache = json.load(f)
@@ -192,415 +57,415 @@ def load_from_cache(channel_id: str) -> dict | None:
     entry = cache.get(channel_id)
     if not entry:
         return None
-
-    fetched_at = entry.get("fetched_at")
-    if fetched_at:
-        try:
-            time_obj = datetime.fromisoformat(fetched_at)
-            # Support both aware and naive logic matching the user prompt
-            if time_obj.tzinfo:
-                now = datetime.now(time_obj.tzinfo)
-                if now - time_obj >= timedelta(hours=24):
-                    return None
-            else:
-                if datetime.utcnow() - time_obj >= timedelta(hours=24):
-                    return None
-        except Exception:
-            return None
-
-    return entry
-
-
-def save_to_cache(channel_id: str, data: dict):
-    """Save channel data to cache."""
-    try:
-        with open(CACHE_FILE, "r") as f:
-            cache = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        cache = {}
-
-    data["fetched_at"] = datetime.utcnow().isoformat()
-    cache[channel_id] = data
-
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f, indent=2)
-
-
-# ---------------------------------------------------------------------------
-# Keyword extraction
-# ---------------------------------------------------------------------------
-
-STOP_WORDS = {
-    "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "is", "it",
-    "how", "what", "why", "with", "your", "you", "my", "i", "we", "this",
-    "that", "from", "or", "be", "are", "was",
-}
-
-
-def extract_keywords(titles: list) -> list:
-    """
-    Extract top 5 most relevant keywords from video titles.
-
-    - Removes common stop words
-    - Only keeps words longer than 3 characters
-    - Returns top 5 by frequency, all lowercase
-    """
-    words = []
-    for title in titles:
-        cleaned = re.sub(r"[^\w\s]", " ", title.lower())
-        for word in cleaned.split():
-            if word not in STOP_WORDS and len(word) > 3:
-                words.append(word)
-
-    counter = Counter(words)
-    return [word for word, _ in counter.most_common(5)]
-
-
-# ---------------------------------------------------------------------------
-# Upload frequency calculation
-# ---------------------------------------------------------------------------
-
-def calculate_upload_frequency(videos: list) -> float:
-    """
-    Calculate upload frequency in videos per week.
-
-    Parses published_at dates (ISO 8601), finds time span between
-    oldest and newest video, returns videos / weeks.
-    """
-    dates = []
-    for v in videos:
-        published = v.get("published_at") or v.get("published_date")
-        if not published:
-            continue
-        try:
-            dt = datetime.fromisoformat(published.replace("Z", "+00:00"))
-            dates.append(dt)
-        except Exception:
-            continue
-
-    if len(dates) < 2:
-        return 0.0
-
-    dates.sort()
-    total_days = (dates[-1] - dates[0]).days
-    if total_days == 0:
-        return 0.0
-
-    videos_per_week = len(dates) / (total_days / 7)
-    return round(videos_per_week, 2)
-
-
-# ---------------------------------------------------------------------------
-# Competitor filtering
-# ---------------------------------------------------------------------------
-
-def filter_competitors(competitors: list, your_channel: dict) -> list:
-    """
-    Filter out irrelevant competitors:
-    - Exclude your own channel
-    - Exclude channels with < 1000 subscribers
-    - Exclude channels with 0 videos
-    - Sort by subscribers descending
-    """
-    your_id = your_channel.get("channel_id", "")
-
-    filtered = []
-    for c in competitors:
-        if c.get("channel_id") == your_id:
-            continue
-        if c.get("subscribers", 0) < 1000:
-            continue
-        if c.get("video_count", 0) == 0:
-            continue
-        filtered.append(c)
-
-    filtered.sort(key=lambda c: c.get("subscribers", 0), reverse=True)
-    return filtered
-
-
-# ---------------------------------------------------------------------------
-# Competitor discovery (main function)
-# ---------------------------------------------------------------------------
-
-def discover_competitors(channel_data: dict, max_results: int = 8, override_keyword: str = None) -> dict:
-    """
-    Main competitor discovery function.
-
-    Steps:
-      1. Extract keywords from your channel's video titles + description
-      2. Search YouTube for competitor channels
-      3. Fetch full details for each competitor
-      4. Filter and return
-
-    Returns dict with competitors list and keywords_used.
-    """
-    your_channel = channel_data.get("channel", {})
-    videos = channel_data.get("videos", [])
-    your_channel_id = your_channel.get("channel_id", "")
-
-    # --- Step 1: Extract keywords ---
-    if override_keyword:
-        search_query = override_keyword
-        keywords_used = override_keyword.split()
-    else:
-        titles = [v.get("title", "") for v in videos]
-
-        # Also extract words from channel description
-        description = your_channel.get("description", "")
-        if description:
-            titles.append(description)
-
-        keywords = extract_keywords(titles)
-        keywords_used = keywords[:3]
-        search_query = " ".join(keywords_used)
-
-    if not search_query.strip():
-        print("[discover_competitors] No keywords found, skipping discovery")
-        return {"competitors": [], "keywords_used": []}
-
-    # --- Step 2: Search YouTube for competitor channels ---
-    try:
-        youtube = get_youtube_client()
-        response = youtube.search().list(
-            q=search_query,
-            type="channel",
-            part="id,snippet",
-            maxResults=max_results + 2,
-            order="relevance",
-        ).execute()
-    except HttpError as e:
-        if e.resp.status == 403:
-            print("[discover_competitors] Step 2 failed: YouTube API quota exceeded")
-            raise ValueError("YouTube API quota exceeded. Please try again tomorrow.")
-        print(f"[discover_competitors] Step 2 failed: {e}")
-        return {"competitors": [], "keywords_used": keywords_used}
-
-    # --- Step 3: Fetch full details for each competitor ---
-    competitors = []
-    for item in response.get("items", []):
-        cid = item["id"].get("channelId") or item["snippet"].get("channelId")
-        if not cid or cid == your_channel_id:
-            continue
-
-        try:
-            details = get_uploads_playlist_id(cid)
-            playlist_id = details.get("uploads_playlist_id")
-
-            # Fetch latest 10 videos
-            video_items = get_video_ids(playlist_id, max_results=10) if playlist_id else []
-            video_stats = get_video_stats(video_items) if video_items else []
-
-            details["videos"] = video_stats
-
-            # Calculate avg_views
-            if video_stats:
-                total_views = sum(v.get("views", 0) for v in video_stats)
-                details["avg_views"] = round(total_views / len(video_stats))
-            else:
-                details["avg_views"] = 0
-
-            # Calculate upload_frequency
-            details["upload_frequency"] = calculate_upload_frequency(video_stats)
-
-            competitors.append(details)
-        except Exception as e:
-            print(f"[discover_competitors] Step 3 failed for channel {cid}: {e}")
-            continue
-
-    # --- Step 4: Filter and return ---
-    filtered = filter_competitors(competitors, your_channel)
-    final = filtered[:max_results]
-
-    return {
-        "competitors": final,
-        "keywords_used": keywords_used,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Master pipeline
-# ---------------------------------------------------------------------------
-
-def build_channel_dataset(channel_url: str, niche_keyword: str = None) -> dict:
-    """
-    Master function: runs full pipeline for a channel and discovers competitors.
-
-    1. Extract channel ID
-    2. Get channel details
-    3. Get video IDs and stats
-    4. Discover competitors
-    5. Save everything to cache
-    """
-    # Step 1
-    channel_id = extract_channel_id(channel_url)
-
-    # Check cache
-    cached = load_from_cache(channel_id)
-    if cached:
-        return cached
-
-    # Step 2
-    channel_info = get_uploads_playlist_id(channel_id)
-    playlist_id = channel_info.get("uploads_playlist_id")
-
-    # Step 3
-    video_items = get_video_ids(playlist_id, max_results=20) if playlist_id else []
-    videos = get_video_stats(video_items) if video_items else []
-
-    dataset = {
-        "channel": channel_info,
-        "videos": videos,
-    }
-
-    # Step 4 — Discover competitors
-    discovery = discover_competitors(dataset, max_results=8, override_keyword=niche_keyword)
-    dataset["competitors"] = discovery.get("competitors", [])
-    dataset["keywords_used"] = discovery.get("keywords_used", [])
-
-    # Step 5 — Save to cache
-    save_to_cache(channel_id, dataset)
-
-    return dataset
-
-
-# ---------------------------------------------------------------------------
-# Detailed Channel Endpoint Logic
-# ---------------------------------------------------------------------------
-
-def parse_duration(duration: str) -> float:
-    match = re.match(r'PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?', duration)
-    if not match: return 0.0
-    hours = int(match.group(1) or 0)
-    minutes = int(match.group(2) or 0)
-    seconds = int(match.group(3) or 0)
-    return round(hours * 60 + minutes + seconds / 60, 2)
-
-
-def get_channel_full_data(channel_url: str) -> dict:
-    # Build complete detailed dataset via requests for one channel
-    channel_id = extract_channel_id(channel_url)
-    
-    # Check cache first
-    cached = load_from_cache(channel_id)
-    if cached and "summary" in cached:
-        fetched_at = datetime.fromisoformat(cached["fetched_at"])
-        if datetime.utcnow() - fetched_at < timedelta(hours=24):
-            return cached
-
-    # Step 1 - Get channel Info
-    try:
-        channel_info = get_uploads_playlist_id(channel_id)
-        uploads_playlist_id = channel_info.get("uploads_playlist_id")
-    except ValueError as e:
-        if "quota" in str(e).lower():
-            raise ValueError("YouTube API quota exceeded. Try again tomorrow.")
-        raise
         
-    print(f"📋 Fetching videos from playlist: {uploads_playlist_id}")
+    fetched_at_str = entry.get("fetched_at")
+    if fetched_at_str:
+        try:
+            fetched_at = datetime.fromisoformat(fetched_at_str)
+            if datetime.utcnow() - fetched_at < timedelta(hours=24):
+                return entry
+        except Exception:
+            pass
+            
+    return None
 
-    # Step 2 - Fetch Video IDs from Playlist using requests
-    videos_url = "https://www.googleapis.com/youtube/v3/playlistItems"
+def _extract_top_keywords(text: str, num: int = 5) -> list:
+    """Helper to extract top N keywords from arbitrary text."""
+    cleaned = re.sub(r'http\S+', '', text.lower())  # Remove URLs
+    cleaned = re.sub(r'[^\w\s]', ' ', cleaned)      # Remove special chars
+    
+    words = []
+    for word in cleaned.split():
+        if word not in STOP_WORDS and len(word) > 3:
+            words.append(word)
+            
+    counter = Counter(words)
+    return [word for word, _ in counter.most_common(num)]
+
+# ---------------------------------------------------------------------------
+# Phase 2.1 — URL → Channel ID
+# ---------------------------------------------------------------------------
+
+def extract_channel_id(url: str) -> str:
+    print(f"🔍 Extracting channel ID from: {url}")
+    
+    # 1. Direct channel ID
+    match = re.search(r"/channel/(UC[\w-]+)", url)
+    if match:
+        cid = match.group(1)
+        print(f"✅ Channel ID: {cid}")
+        return cid
+
+    # 2. Raw channel ID
+    if re.match(r"^UC[\w-]{22}$", url):
+        print(f"✅ Channel ID: {url}")
+        return url
+
+    # 3. Handle or custom URL resolving
+    search_query = None
+    handle_match = re.search(r"/@([\w.-]+)", url)
+    if handle_match:
+        search_query = f"@{handle_match.group(1)}"
+        
+    name_match = re.search(r"/(?:c|user)/([\w.-]+)", url)
+    if name_match:
+        search_query = name_match.group(1)
+
+    if search_query:
+        search_url = "https://www.googleapis.com/youtube/v3/search"
+        params = {
+            "part": "snippet",
+            "q": search_query,
+            "type": "channel",
+            "maxResults": 1,
+            "key": YOUTUBE_API_KEY
+        }
+        try:
+            res = requests.get(search_url, params=params)
+            res.raise_for_status()
+            data = res.json()
+            items = data.get("items", [])
+            if items:
+                cid = items[0]["snippet"]["channelId"]
+                print(f"✅ Channel ID: {cid}")
+                return cid
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                raise Exception("YouTube API quota exceeded")
+            raise Exception(f"Failed to search for channel ID: {e}")
+
+    raise ValueError(f"Could not extract a valid YouTube Channel ID from URL: {url}")
+
+# ---------------------------------------------------------------------------
+# Phase 2.2 — Fetch Channel Info + Videos
+# ---------------------------------------------------------------------------
+
+def extract_from_description(description: str) -> dict:
+    """Extract hashtags and keywords from text."""
+    # Extract hashtags
+    hashtags = re.findall(r'#(\w+)', description)
+    description_hashtags = [f"#{h}" for h in hashtags]
+    
+    # Remove hashtags for keyword parsing
+    desc_no_hash = re.sub(r'#\w+', '', description)
+    description_keywords = _extract_top_keywords(desc_no_hash, 10)
+    
+    return {
+        "description_hashtags": description_hashtags,
+        "description_keywords": description_keywords
+    }
+
+def get_channel_full_data(channel_id: str, max_videos: int = 20) -> dict:
+    print(f"📡 Fetching channel info...")
+    
+    # --- Step A: Fetch Channel Info ---
+    channel_url = "https://www.googleapis.com/youtube/v3/channels"
     params = {
-        "part": "snippet,contentDetails",
-        "playlistId": uploads_playlist_id,
-        "maxResults": 10,
+        "part": "snippet,statistics,contentDetails,brandingSettings,topicDetails",
+        "id": channel_id,
+        "key": YOUTUBE_API_KEY
+    }
+    try:
+        res = requests.get(channel_url, params=params)
+        res.raise_for_status()
+        data = res.json()
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 403:
+            raise Exception("YouTube API quota exceeded")
+        if e.response.status_code == 404:
+            raise Exception("Channel not found")
+        raise Exception(f"Failed to fetch channel info: {e}")
+
+    items = data.get("items", [])
+    if not items:
+        raise Exception("Channel not found")
+
+    channel_data = items[0]
+    snippet = channel_data.get("snippet", {})
+    statistics = channel_data.get("statistics", {})
+    content = channel_data.get("contentDetails", {})
+    branding = channel_data.get("brandingSettings", {}).get("channel", {})
+    topics = channel_data.get("topicDetails", {}).get("topicCategories", [])
+
+    channel_name = snippet.get("title", "")
+    description = snippet.get("description", "")
+    subscribers = int(statistics.get("subscriberCount", 0))
+    
+    print(f"✅ Channel: {channel_name} | Subs: {subscribers}")
+    
+    # Extract Branding Keywords
+    keywords_raw = branding.get("keywords", "")
+    channel_keywords = []
+    if keywords_raw:
+        # Hacky split that respects quotes, but simple split works for MVP
+        channel_keywords = re.findall(r'"([^"]*)"|(\S+)', keywords_raw)
+        channel_keywords = [g1 or g2 for g1, g2 in channel_keywords if (g1 or g2)]
+    print(f"🏷️  Channel keywords: {channel_keywords}")
+    
+    # Extract Topic Categories
+    topic_categories = []
+    for t in topics:
+        topic_name = t.split("/")[-1].replace("_", " ")
+        topic_categories.append(topic_name)
+        
+    # --- Step B: Extract from description ---
+    extracted = extract_from_description(description)
+    description_hashtags = extracted["description_hashtags"]
+    description_keywords = extracted["description_keywords"]
+    print(f"#️⃣  Description hashtags: {description_hashtags}")
+
+    # Build channel payload
+    channel_info = {
+        "channel_id": channel_id,
+        "channel_name": channel_name,
+        "description": description,
+        "subscribers": subscribers,
+        "total_views": int(statistics.get("viewCount",  0)),
+        "video_count": int(statistics.get("videoCount", 0)),
+        "country": snippet.get("country", "Unknown"),
+        "uploads_playlist_id": content.get("relatedPlaylists", {}).get("uploads", ""),
+        "channel_keywords": channel_keywords,
+        "topic_categories": topic_categories,
+        "description_hashtags": description_hashtags,
+        "description_keywords": description_keywords
+    }
+
+    # --- Step C: Fetch Latest Videos from Playlist ---
+    uploads_playlist_id = channel_info["uploads_playlist_id"]
+    print(f"🎬 Fetching {max_videos} videos from playlist...")
+    
+    videos = []
+    if uploads_playlist_id:
+        videos_url = "https://www.googleapis.com/youtube/v3/playlistItems"
+        v_params = {
+            "part": "snippet,contentDetails",
+            "playlistId": uploads_playlist_id,
+            "maxResults": max_videos,
+            "key": YOUTUBE_API_KEY
+        }
+        try:
+            v_res = requests.get(videos_url, params=v_params)
+            v_res.raise_for_status()
+            v_data = v_res.json()
+            
+            for item in v_data.get("items", []):
+                videos.append({
+                    "video_id": item["contentDetails"]["videoId"],
+                    "title": item["snippet"]["title"],
+                    "published_at": item["contentDetails"]["videoPublishedAt"],
+                    "thumbnail": item["snippet"]["thumbnails"].get("medium", {}).get("url", "")
+                })
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                raise Exception("YouTube API quota exceeded")
+            print(f"⚠️ Warning: Failed to fetch playlist items: {e}")
+
+    print(f"✅ Got {len(videos)} video IDs")
+    return {
+        "channel": channel_info,
+        "playlist_videos": videos
+    }
+
+# ---------------------------------------------------------------------------
+# Phase 2.3 — Fetch Video Stats + Hashtags + Tags
+# ---------------------------------------------------------------------------
+
+def get_video_details(video_ids: list) -> dict:
+    if not video_ids:
+        return {}
+        
+    print(f"📊 Fetching stats + tags + hashtags for all videos...")
+    stats_url = "https://www.googleapis.com/youtube/v3/videos"
+    params = {
+        "part": "statistics,contentDetails,snippet",
+        "id": ",".join(video_ids),
         "key": YOUTUBE_API_KEY
     }
     
     try:
-        res = requests.get(videos_url, params=params)
+        res = requests.get(stats_url, params=params)
         res.raise_for_status()
-        playlist_data = res.json()
+        data = res.json()
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
-            raise ValueError("YouTube API quota exceeded. Try again tomorrow.")
-        raise ValueError(f"Failed to fetch playlist items")
+            raise Exception("YouTube API quota exceeded")
+        print(f"⚠️ Warning: Failed to fetch video stats: {e}")
+        return {}
 
-    playlist_items = playlist_data.get("items", [])
-    if not playlist_items:
-        print("⚠️ Warning: No items found in playlist.")
-        videos = []
-    else:
-        video_ids = [item["contentDetails"]["videoId"] for item in playlist_items]
-        print(f"✅ Found {len(video_ids)} videos")
+    stats_map = {}
+    for item in data.get("items", []):
+        try:
+            vid = item["id"]
+            stats = item.get("statistics", {})
+            content = item.get("contentDetails", {})
+            snippet = item.get("snippet", {})
+            
+            # Tags
+            tags = snippet.get("tags", [])
+            
+            # Hashtags
+            desc = snippet.get("description", "")
+            hashtags = [f"#{h}" for h in re.findall(r'#(\w+)', desc)]
+            
+            # Keywords
+            title = snippet.get("title", "")
+            keywords = _extract_top_keywords(title, 5)
+            
+            stats_map[vid] = {
+                "views": int(stats.get("viewCount", 0)),
+                "likes": int(stats.get("likeCount", 0)),
+                "comments": int(stats.get("commentCount", 0)),
+                "duration_minutes": parse_duration_to_minutes(content.get("duration", "PT0S")),
+                "tags": tags,
+                "video_hashtags": hashtags,
+                "video_keywords": keywords
+            }
+        except Exception as e:
+            print(f"⚠️ Single video parse failed, skipping: {e}")
+            continue
+            
+    print(f"✅ Stats fetched for {len(stats_map)} videos")
+    return stats_map
 
-        # Step 3 - Fetch Video Stats in One Batch Call
-        print(f"📊 Fetching stats for {len(video_ids)} videos...")
-        stats_url = "https://www.googleapis.com/youtube/v3/videos"
-        stats_params = {
-            "part": "statistics,contentDetails",
-            "id": ",".join(video_ids),
-            "key": YOUTUBE_API_KEY
+# ---------------------------------------------------------------------------
+# Phase 2.4 — Build Combined Dataset
+# ---------------------------------------------------------------------------
+
+def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword: str = None) -> dict:
+    # Step 1
+    channel_id = extract_channel_id(channel_url)
+    
+    # Step 2
+    cached = load_from_cache(channel_id)
+    if cached:
+        print("⚡ Returning fast cached result")
+        return cached
+
+    # Step 3
+    full_data = get_channel_full_data(channel_id, max_videos)
+    channel_info = full_data["channel"]
+    playlist_videos = full_data["playlist_videos"]
+    
+    # Step 4
+    video_ids = [v["video_id"] for v in playlist_videos]
+    stats_map = get_video_details(video_ids)
+    
+    # Step 5 - Combine per video
+    combined_videos = []
+    
+    all_hashtags = set(channel_info.get("description_hashtags", []))
+    all_tags = set()
+    all_keywords = channel_info.get("description_keywords", [])
+    
+    title_words = []
+    
+    for video in playlist_videos:
+        vid = video["video_id"]
+        stats = stats_map.get(vid, {})
+        
+        c_video = {
+            "video_id": vid,
+            "title": video.get("title", ""),
+            "published_at": video.get("published_at", ""),
+            "thumbnail": video.get("thumbnail", ""),
+            "views": stats.get("views", 0),
+            "likes": stats.get("likes", 0),
+            "comments": stats.get("comments", 0),
+            "duration_minutes": stats.get("duration_minutes", 0.0),
+            "tags": stats.get("tags", []),
+            "video_hashtags": stats.get("video_hashtags", []),
+            "video_keywords": stats.get("video_keywords", [])
         }
         
-        try:
-            stats_res = requests.get(stats_url, params=stats_params)
-            stats_res.raise_for_status()
-            stats_data = stats_res.json()
-            print("✅ Stats fetched successfully")
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 403:
-                raise ValueError("YouTube API quota exceeded. Try again tomorrow.")
-            raise ValueError(f"Failed to fetch video stats")
-
-        # Step 4 - Combine Videos + Stats
-        videos = []
-        stats_map = {item["id"]: item for item in stats_data.get("items", [])}
-
-        for item in playlist_items:
-            try:
-                video_id = item["contentDetails"]["videoId"]
-                stats = stats_map.get(video_id, {}).get("statistics", {})
-                content = stats_map.get(video_id, {}).get("contentDetails", {})
-                
-                videos.append({
-                    "videoId": video_id,
-                    "title": item["snippet"]["title"],
-                    "publishedAt": item["contentDetails"]["videoPublishedAt"],
-                    "thumbnail": item["snippet"]["thumbnails"].get("medium", {}).get("url", ""),
-                    "views": int(stats.get("viewCount", 0)),
-                    "likes": int(stats.get("likeCount", 0)),
-                    "comments": int(stats.get("commentCount", 0)),
-                    "duration_minutes": parse_duration(content.get("duration", "PT0S"))
-                })
-            except Exception as e:
-                print(f"⚠️ Failed to parse stats for single video: {e}")
-                continue
-
-        videos.sort(key=lambda x: x["views"], reverse=True)
-
-    # Step 5 - Build Summary
-    summary = {
-        "total_videos_fetched": len(videos),
-        "avg_views": int(sum(v["views"] for v in videos) / len(videos)) if videos else 0,
-        "avg_likes": int(sum(v["likes"] for v in videos) / len(videos)) if videos else 0,
-        "avg_duration_minutes": round(sum(v["duration_minutes"] for v in videos) / len(videos), 2) if videos else 0.0,
-        "top_video": videos[0] if videos else None
+        # Accumulate signal data
+        all_hashtags.update(c_video["video_hashtags"])
+        all_tags.update(c_video["tags"])
+        
+        # Track title words for all_keywords
+        title_cleaned = re.sub(r'[^\w\s]', ' ', c_video["title"].lower())
+        title_words.extend([w for w in title_cleaned.split() if w not in STOP_WORDS and len(w) > 3])
+            
+        combined_videos.append(c_video)
+        
+    combined_videos.sort(key=lambda x: x["views"], reverse=True)
+    
+    # Compile top 15 all_keywords
+    kw_counter = Counter(all_keywords + title_words)
+    final_all_keywords = [w for w, _ in kw_counter.most_common(15)]
+    
+    # Calculate most used tags/hashtags for summary
+    hash_counter = Counter([h for v in combined_videos for h in v["video_hashtags"]])
+    tag_counter = Counter([t for v in combined_videos for t in v["tags"]])
+    
+    most_used_hashtags = [h for h, _ in hash_counter.most_common(5)]
+    most_used_tags = [t for t, _ in tag_counter.most_common(5)]
+    
+    ordered_all_hashtags = list(all_hashtags)
+    ordered_all_tags = list(all_tags)
+    
+    # --- Step 6: Build Signals ---
+    # Top search query 1: Top 3 keywords
+    query_1 = " ".join(final_all_keywords[:3]) if final_all_keywords else ""
+    # Top search query 2: Top 2 hashtags
+    query_2 = " ".join([h.replace("#", "") for h in most_used_hashtags[:2]]) if most_used_hashtags else ""
+    # Top search query 3: First topic category
+    query_3 = channel_info["topic_categories"][0] if channel_info.get("topic_categories") else ""
+    # Top search query 4: top channel keyword + tutorial/review
+    q4_base = channel_info["channel_keywords"][0] if channel_info.get("channel_keywords") else final_all_keywords[0] if final_all_keywords else ""
+    
+    # Guess if review or tutorial is more common
+    rev_count = title_words.count("review")
+    tut_count = title_words.count("tutorial")
+    suffix = "review" if rev_count >= tut_count else "tutorial"
+    query_4 = f"{q4_base} {suffix}".strip()
+    
+    # Top search query 5: top tag + top keyword
+    t_tag = most_used_tags[0] if most_used_tags else ""
+    t_key = final_all_keywords[0] if final_all_keywords else ""
+    query_5 = f"{t_tag} {t_key}".strip()
+    
+    top_search_queries = [q for q in [query_1, query_2, query_3, query_4, query_5] if q]
+    
+    signals = {
+        "all_hashtags": ordered_all_hashtags,
+        "all_tags": ordered_all_tags,
+        "all_keywords": final_all_keywords,
+        "channel_keywords": channel_info.get("channel_keywords", []),
+        "topic_categories": channel_info.get("topic_categories", []),
+        "top_search_queries": top_search_queries
     }
+    
+    print(f"🔗 Signals built: {len(signals['all_hashtags'])} hashtags | {len(signals['all_tags'])} tags | {len(signals['all_keywords'])} keywords")
+    print(f"🔎 Top search queries for competitor discovery: {signals['top_search_queries']}")
 
-    # Step 6 - Combine all into final response
-    final_data = {
-        "channel_id": channel_info["channel_id"],
-        "channel_name": channel_info["channel_name"],
-        "subscribers": channel_info["subscribers"],
-        "total_views": channel_info["total_views"],
-        "video_count": channel_info["video_count"],
-        "uploads_playlist_id": channel_info["uploads_playlist_id"],
-        "videos": videos,
+    # --- Step 7: Build Summary ---
+    summary = {
+        "total_videos_fetched": len(combined_videos),
+        "avg_views": int(sum(v["views"] for v in combined_videos) / len(combined_videos)) if combined_videos else 0,
+        "avg_likes": int(sum(v["likes"] for v in combined_videos) / len(combined_videos)) if combined_videos else 0,
+        "avg_duration_minutes": round(sum(v["duration_minutes"] for v in combined_videos) / len(combined_videos), 2) if combined_videos else 0,
+        "top_video": combined_videos[0] if combined_videos else None,
+        "most_used_hashtags": most_used_hashtags,
+        "most_used_tags": most_used_tags
+    }
+    
+    # Clean up channel payload before returning
+    _ = channel_info.pop("description_hashtags", None)
+    _ = channel_info.pop("description_keywords", None)
+
+    # --- Step 8: Build and return dataset ---
+    dataset = {
+        "fetched_at": datetime.utcnow().isoformat(),
+        "channel": channel_info,
+        "videos": combined_videos,
+        "signals": signals,
         "summary": summary
     }
-
-    # Step 7 - Save to Cache
-    try:
-        with open(CACHE_FILE, "r") as f:
-            cache = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        cache = {}
-
-    final_data["fetched_at"] = datetime.utcnow().isoformat()
-    cache[channel_id] = final_data
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f, indent=2)
-    print("💾 Saved to cache")
+    
+    # --- Step 9: Save to Cache ---
+    save_to_cache(channel_id, dataset)
+    print(f"💾 Dataset saved to cache")
+    
+    return dataset
 
     return final_data

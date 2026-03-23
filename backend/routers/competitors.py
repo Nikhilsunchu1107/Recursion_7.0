@@ -5,7 +5,6 @@ from services.youtube_service import (
     extract_channel_id,
     build_channel_dataset,
     load_from_cache,
-    discover_competitors,
 )
 
 router = APIRouter(prefix="/competitors", tags=["competitors"])
