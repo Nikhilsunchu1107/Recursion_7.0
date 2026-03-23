@@ -6,11 +6,11 @@ from collections import Counter
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
+from services.cache_service import get_cache, set_cache
+
 load_dotenv()
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "cache.json")
-os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
 
 STOP_WORDS = {
     "the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "is", "it", 
@@ -34,40 +34,12 @@ def parse_duration_to_minutes(duration: str) -> float:
     return round(hours * 60 + minutes + seconds / 60, 2)
 
 def save_to_cache(channel_id: str, data: dict):
-    """Save dataset to data/cache.json."""
-    try:
-        with open(CACHE_FILE, "r") as f:
-            cache = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        cache = {}
-
-    cache[channel_id] = data
-
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f, indent=2)
+    """Save dataset to Redis cache with 1-hour TTL."""
+    set_cache(channel_id, data, ttl_seconds=3600)
 
 def load_from_cache(channel_id: str) -> dict | None:
-    """Load from data/cache.json if not stale."""
-    try:
-        with open(CACHE_FILE, "r") as f:
-            cache = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
-
-    entry = cache.get(channel_id)
-    if not entry:
-        return None
-        
-    fetched_at_str = entry.get("fetched_at")
-    if fetched_at_str:
-        try:
-            fetched_at = datetime.fromisoformat(fetched_at_str)
-            if datetime.utcnow() - fetched_at < timedelta(hours=24):
-                return entry
-        except Exception:
-            pass
-            
-    return None
+    """Load from Redis cache."""
+    return get_cache(channel_id)
 
 def _extract_top_keywords(text: str, num: int = 5) -> list:
     """Helper to extract top N keywords from arbitrary text."""
