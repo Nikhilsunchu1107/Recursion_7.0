@@ -1,6 +1,6 @@
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/auth-context';
 
 const navItems = [
   { to: '/dashboard_overview', icon: 'dashboard', label: 'Dashboard' },
@@ -12,9 +12,19 @@ const navItems = [
 ];
 
 export default function SideNav() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = displayName.substring(0, 2).toUpperCase();
+
   return (
-    <aside className="fixed left-0 top-0 h-screen z-40 bg-[#191b22] hidden md:flex flex-col w-64">
+    <aside className="fixed left-0 top-0 h-screen z-40 bg-[#191b22] hidden md:flex flex-col w-64 border-r border-white/5">
       <div className="px-6 py-8">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center">
@@ -56,21 +66,33 @@ export default function SideNav() {
       </nav>
 
       <div className="p-4 border-t border-white/5">
-        {user ? (
-          <Link to="/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#1e1f26] transition-colors cursor-pointer">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center text-[#00285d] font-bold text-sm shrink-0 uppercase">
-              {user.name.substring(0, 2)}
+        {isAuthenticated ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-[#1e1f26] transition-colors cursor-pointer">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] flex items-center justify-center text-[#00285d] font-bold text-sm shrink-0 uppercase">
+                {initials}
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-sm font-bold text-[#e2e2eb] truncate">{displayName}</p>
+                <p className="text-xs text-[#9ea0a3] truncate">{user?.email || ''}</p>
+              </div>
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold text-[#e2e2eb] truncate">{user.name}</p>
-              <p className="text-xs text-[#9ea0a3] truncate">{user.role}</p>
-            </div>
-          </Link>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center justify-center gap-2 p-2 w-full rounded-xl bg-white/5 hover:bg-red-500/10 hover:text-red-400 text-[#9ea0a3] text-xs font-medium transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">logout</span>
+              Sign Out
+            </button>
+          </div>
         ) : (
-          <Link to="/login" className="flex items-center justify-center gap-2 p-3 w-full rounded-xl bg-white/5 hover:bg-white/10 text-[#e2e2eb] font-bold text-sm transition-colors">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center justify-center gap-2 p-3 w-full rounded-xl bg-white/5 hover:bg-white/10 text-[#e2e2eb] font-bold text-sm transition-colors"
+          >
             <span className="material-symbols-outlined text-sm">login</span>
             Sign In
-          </Link>
+          </button>
         )}
       </div>
     </aside>
