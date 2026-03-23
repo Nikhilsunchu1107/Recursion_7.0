@@ -443,4 +443,104 @@ def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword:
     
     return dataset
 
-    return final_data
+# ---------------------------------------------------------------------------
+# Phase 3 — Fetch Competitor Videos (FR-13 to FR-15)
+# ---------------------------------------------------------------------------
+
+def fetch_videos_for_competitors(competitors: list, max_videos: int = 10) -> list:
+    """Fetch the most recent videos and their stats for a list of competitor channels."""
+    if not competitors:
+        return []
+
+    print(f"🎬 Fetching recent videos for {len(competitors)} competitors...")
+    channel_ids = [c["channel_id"] for c in competitors]
+    
+    # 1. Get upload playlist IDs for all competitors (in batches of 50)
+    uploads_playlists = {}
+    channels_url = "https://www.googleapis.com/youtube/v3/channels"
+    
+    for i in range(0, len(channel_ids), 50):
+        batch = channel_ids[i:i + 50]
+        params = {
+            "part": "contentDetails",
+            "id": ",".join(batch),
+            "key": YOUTUBE_API_KEY
+        }
+        try:
+            res = requests.get(channels_url, params=params)
+            res.raise_for_status()
+            data = res.json()
+            for item in data.get("items", []):
+                pid = item.get("contentDetails", {}).get("relatedPlaylists", {}).get("uploads")
+                if pid:
+                    uploads_playlists[item["id"]] = pid
+        except Exception as e:
+            print(f"⚠️ Failed to fetch playlists for batch: {e}")
+
+    # 2. Fetch video IDs from each playlist
+    all_video_ids = []
+    comp_videos_map = {cid: [] for cid in channel_ids}
+    
+    playlist_url = "https://www.googleapis.com/youtube/v3/playlistItems"
+    for cid in channel_ids:
+        pid = uploads_playlists.get(cid)
+        if not pid:
+            continue
+            
+        params = {
+            "part": "contentDetails,snippet",
+            "playlistId": pid,
+            "maxResults": max_videos,
+            "key": YOUTUBE_API_KEY
+        }
+        try:
+            res = requests.get(playlist_url, params=params)
+            res.raise_for_status()
+            data = res.json()
+            for item in data.get("items", []):
+                vid = item["contentDetails"]["videoId"]
+                all_video_ids.append(vid)
+                comp_videos_map[cid].append({
+                    "video_id": vid,
+                    "title": item["snippet"]["title"],
+                    "published_at": item["contentDetails"]["videoPublishedAt"],
+                    "thumbnail": item["snippet"]["thumbnails"].get("medium", {}).get("url", "")
+                })
+        except Exception as e:
+            print(f"⚠️ Failed to fetch videos for channel {cid}: {e}")
+
+    # 3. Batch fetch video stats
+    # get_video_details takes a list of IDs and batches them internally?
+    # Wait, the current get_video_details joins video_ids. YouTube API max length is 50 for ids.
+    # Let's batch all_video_ids in groups of 50
+    stats_map = {}
+    for i in range(0, len(all_video_ids), 50):
+        batch = all_video_ids[i:i + 50]
+        batch_stats = get_video_details(batch)
+        stats_map.update(batch_stats)
+        
+    # 4. Attach videos and stats to competitors
+    enriched_competitors = []
+    for c in competitors:
+        cid = c["channel_id"]
+        videos = comp_videos_map.get(cid, [])
+        
+        enriched_videos = []
+        for v in videos:
+            vid = v["video_id"]
+            stats = stats_map.get(vid, {})
+            v["views"] = stats.get("views", 0)
+            v["likes"] = stats.get("likes", 0)
+            v["comments"] = stats.get("comments", 0)
+            v["duration_minutes"] = stats.get("duration_minutes", 0.0)
+            v["tags"] = stats.get("tags", [])
+            v["video_keywords"] = stats.get("video_keywords", [])
+            enriched_videos.append(v)
+            
+        # Reconstruct competitor with recent_videos
+        c_copy = c.copy()
+        c_copy["recent_videos"] = enriched_videos
+        enriched_competitors.append(c_copy)
+        
+    print(f"✅ Extracted videos for {len(enriched_competitors)} competitors.")
+    return enriched_competitors

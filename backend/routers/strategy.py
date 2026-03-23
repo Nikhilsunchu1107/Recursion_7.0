@@ -5,8 +5,7 @@ from services.youtube_service import (
     extract_channel_id,
     load_from_cache,
 )
-from services.analysis_service import analyze_patterns
-from services.openrouter_service import generate_strategy
+from services.llm_service import generate_strategy
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
@@ -34,27 +33,30 @@ async def generate(request: StrategyRequest):
 
         competitor_data = dataset["competitors"]
 
-        # Use ONLY strong competitors for strategy
-        strategy_competitors = competitor_data.get("strategy_competitors", [])
+        # The competitor list is stored under competitor_data["competitors"]
+        strategy_competitors = competitor_data.get("competitors", [])
 
         if not strategy_competitors:
             raise HTTPException(
                 status_code=400,
-                detail="No strong competitors found. Cannot generate meaningful strategy. Try a broader niche keyword."
+                detail="No competitors found in cache. Please re-run /competitors/discover first, then try again."
             )
 
-        print(f"🎯 Generating strategy based on {len(strategy_competitors)} strong competitors")
+        print(f"🎯 Generating strategy based on {len(strategy_competitors)} competitors")
         for c in strategy_competitors:
-            print(f"   → {c['channel_name']} (score: {c['relevance_score']})")
+            print(f"   → {c.get('channel_name')} (score: {c.get('relevance_score')})")
 
         # Analyze patterns from strong competitors only
-        patterns = analyze_patterns(strategy_competitors)
+        from services.analysis_service import run_full_analysis
+        
+        analysis_result = run_full_analysis(
+            your_channel_data=dataset,
+            competitor_result={"competitors": strategy_competitors}
+        )
 
         # Generate AI strategy
         strategy = generate_strategy(
-            channel_data=dataset["channel"],
-            patterns=patterns,
-            competitors=strategy_competitors
+            analysis_payload=analysis_result
         )
 
         return {

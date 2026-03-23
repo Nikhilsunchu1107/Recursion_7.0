@@ -42,7 +42,7 @@ This document tracks the implementation progress of features defined in the `PRD
 - [ ] **FR-13**: Fetch top 10 videos by view count for each competitor channel.
 - [ ] **FR-14**: Compute average views per video for each channel.
 - [ ] **FR-15**: Compute upload frequency (videos per week) for each channel.
-- [ ] **FR-16**: Cluster video titles into topic groups using sentence-transformers.
+- [ ] **FR-16**: Cluster video titles into topic groups using OpenRouter LLM.
 - [ ] **FR-17**: Identify topics present in competitor channels but absent from input channel.
 - [ ] **FR-18**: Identify topics where input channel underperforms vs competitors.
 - [ ] **FR-19**: Return structured JSON with all metrics per channel.

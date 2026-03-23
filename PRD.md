@@ -71,7 +71,7 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 | **Frontend** | React 18 + Vite + Tailwind | Vercel (CDN) | UI, charts, strategy cards |
 | **Backend API** | Python 3.11 + FastAPI | Render (Docker) | Pipeline orchestration, API routing |
 | **Database/Auth**| Supabase (Postgres + Auth) | Supabase Cloud | OAuth, user accounts, persistence |
-| **AI / ML** | OpenRouter API + scikit-learn | Within backend | NLP, clustering, strategy generation |
+| **AI / ML** | OpenRouter API (LLM) | Within backend | Pattern recognition, NLP, strategy generation |
 | **Cache** | Redis 7 | Render add-on | YouTube API quota protection |
 | **Data Source**| YouTube Data API v3 | External | Channel and video data |
 
@@ -101,7 +101,7 @@ SpyGlass is a decoupled monorepo with two independently deployed services commun
 - **FR-13**: Fetch top 10 videos by view count for each competitor channel (High)
 - **FR-14**: Compute average views per video for each channel (High)
 - **FR-15**: Compute upload frequency (videos per week) for each channel (High)
-- **FR-16**: Cluster video titles into topic groups using sentence-transformers (High)
+- **FR-16**: Cluster video titles into topic groups by passing aggregated raw video data to an LLM via OpenRouter API (High)
 - **FR-17**: Identify topics present in competitor channels but absent from input channel (High)
 - **FR-18**: Identify topics where input channel underperforms vs competitors (Medium)
 - **FR-19**: Return structured JSON with all metrics per channel (High)
