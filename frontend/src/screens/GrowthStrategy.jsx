@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { useAnalysis } from '../context/AnalysisContext';
+import { generateStrategy } from '../lib/api';
 
 const priorityStyles = {
   high: { label: 'High Priority', classes: 'text-red-400 bg-red-400/10' },
@@ -14,26 +14,26 @@ const accentColors = ['text-[#adc6ff]', 'text-[#d0bcff]', 'text-[#a8edea]', 'tex
 const iconPool = ['auto_awesome', 'hub', 'forum', 'campaign', 'trending_up', 'video_library'];
 
 export default function GrowthStrategy() {
-  const [strategy, setStrategy] = useState(null);
+  const { channelUrl, strategy: ctxStrategy, setStrategy: setCtxStrategy } = useAnalysis();
+  const [strategy, setStrategy] = useState(ctxStrategy || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [channelUrl, setChannelUrl] = useState('');
+  const [channelInput, setChannelInput] = useState(channelUrl || '');
+
+  // Sync from context on mount
+  useEffect(() => {
+    if (ctxStrategy && !strategy) {
+      setStrategy(ctxStrategy);
+    }
+  }, [ctxStrategy]);
 
   const fetchStrategy = async (url) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/strategy/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_url: url }),
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Failed to generate strategy');
-      }
-      const data = await res.json();
+      const data = await generateStrategy(url);
       setStrategy(data);
+      setCtxStrategy(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,7 +59,7 @@ export default function GrowthStrategy() {
               className="hidden md:flex items-center bg-[#0c0e14] rounded-full px-4 py-2 w-full max-w-lg"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (channelUrl.trim()) fetchStrategy(channelUrl.trim());
+                if (channelInput.trim()) fetchStrategy(channelInput.trim());
               }}
             >
               <span className="material-symbols-outlined text-[#9ea0a3] text-lg">search</span>
@@ -67,14 +67,15 @@ export default function GrowthStrategy() {
                 className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-[#9ea0a3]/50 text-[#e2e2eb] ml-2"
                 placeholder="Enter YouTube channel URL to generate strategy..."
                 type="text"
-                value={channelUrl}
-                onChange={(e) => setChannelUrl(e.target.value)}
+                value={channelInput}
+                onChange={(e) => setChannelInput(e.target.value)}
               />
               <button
                 type="submit"
-                className="ml-2 bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-5 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-all whitespace-nowrap"
+                disabled={loading}
+                className="ml-2 bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-5 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-all whitespace-nowrap disabled:opacity-50"
               >
-                Generate
+                {loading ? 'Generating...' : 'Generate'}
               </button>
             </form>
           </div>

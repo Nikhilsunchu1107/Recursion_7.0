@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { useAnalysis } from '../context/AnalysisContext';
+import { generateStrategy } from '../lib/api';
 
 const accentSets = [
   { border: 'border-[#adc6ff]', text: 'text-[#adc6ff]' },
@@ -11,28 +11,29 @@ const accentSets = [
 ];
 
 export default function OpportunityGaps() {
+  const { channelUrl, strategy: ctxStrategy, setStrategy: setCtxStrategy } = useAnalysis();
   const [gaps, setGaps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [channelUrl, setChannelUrl] = useState('');
+  const [channelInput, setChannelInput] = useState(channelUrl || '');
   const [channelName, setChannelName] = useState('');
+
+  // Sync from context on mount if strategy already exists
+  useEffect(() => {
+    if (ctxStrategy?.strategy?.content_gaps) {
+      setGaps(ctxStrategy.strategy.content_gaps);
+      setChannelName(ctxStrategy.channel || '');
+    }
+  }, [ctxStrategy]);
 
   const fetchGaps = async (url) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/strategy/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel_url: url }),
-      });
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Failed to fetch opportunity gaps');
-      }
-      const data = await res.json();
+      const data = await generateStrategy(url);
       setGaps(data?.strategy?.content_gaps || []);
       setChannelName(data?.channel || '');
+      setCtxStrategy(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -51,7 +52,7 @@ export default function OpportunityGaps() {
               className="hidden md:flex items-center bg-[#0c0e14] rounded-full px-4 py-2 w-full max-w-lg"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (channelUrl.trim()) fetchGaps(channelUrl.trim());
+                if (channelInput.trim()) fetchGaps(channelInput.trim());
               }}
             >
               <span className="material-symbols-outlined text-[#9ea0a3] text-lg">search</span>
@@ -59,14 +60,15 @@ export default function OpportunityGaps() {
                 className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-[#9ea0a3]/50 text-[#e2e2eb] ml-2"
                 placeholder="Enter YouTube channel URL to find gaps..."
                 type="text"
-                value={channelUrl}
-                onChange={(e) => setChannelUrl(e.target.value)}
+                value={channelInput}
+                onChange={(e) => setChannelInput(e.target.value)}
               />
               <button
                 type="submit"
-                className="ml-2 bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-5 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-all whitespace-nowrap"
+                disabled={loading}
+                className="ml-2 bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-5 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-all whitespace-nowrap disabled:opacity-50"
               >
-                Analyze
+                {loading ? 'Analyzing...' : 'Analyze'}
               </button>
             </form>
           </div>

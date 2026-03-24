@@ -1,17 +1,12 @@
-<<<<<<< Updated upstream
-import os
-=======
 from dotenv import load_dotenv
 load_dotenv()
 
 import os
-print("CURRENT API KEY:", os.getenv("YOUTUBE_API_KEY"))
->>>>>>> Stashed changes
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import channel, competitors, patterns, strategy
+from routers import analysis, channel, competitors, patterns, strategy
 
 
 def _get_cors_origins() -> list[str]:
@@ -59,6 +54,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(analysis.router)
 app.include_router(channel.router)
 app.include_router(competitors.router)
 app.include_router(patterns.router)

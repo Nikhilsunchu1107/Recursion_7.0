@@ -1,14 +1,39 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAnalysis } from '../context/AnalysisContext';
+import { analyzeChannel } from '../lib/api';
 import BottomNav from '../components/BottomNav';
 
 export default function SearchAnalyzeLanding() {
   const navigate = useNavigate();
+  const { setChannelUrl, setChannelData, setCompetitors, setPatterns, setStrategy, setError: setCtxError } = useAnalysis();
   const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleAnalyze = (e) => {
+  const handleAnalyze = async (e) => {
     e.preventDefault();
-    navigate('/dashboard_overview');
+    const trimmed = url.trim();
+    if (!trimmed) return;
+
+    setLoading(true);
+    setError(null);
+    // Reset previous analysis
+    setCompetitors(null);
+    setPatterns(null);
+    setStrategy(null);
+    setCtxError(null);
+
+    try {
+      setChannelUrl(trimmed);
+      const data = await analyzeChannel(trimmed);
+      setChannelData(data);
+      navigate('/dashboard_overview');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,9 +51,10 @@ export default function SearchAnalyzeLanding() {
         <div className="flex items-center gap-4">
           <button
             onClick={handleAnalyze}
-            className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-6 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#adc6ff]/10"
+            disabled={loading}
+            className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-6 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#adc6ff]/10 disabled:opacity-50"
           >
-            Analyze
+            {loading ? 'Analyzing...' : 'Analyze'}
           </button>
           <a href="/profile"><span className="material-symbols-outlined text-[#9ea0a3] cursor-pointer hover:text-[#adc6ff] transition-colors">account_circle</span></a>
         </div>
@@ -63,17 +89,36 @@ export default function SearchAnalyzeLanding() {
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
+                    disabled={loading}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-10 py-5 rounded-xl font-bold text-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 group/btn shadow-lg shadow-[#4d8eff]/20"
+                  disabled={loading}
+                  className="bg-gradient-to-br from-[#adc6ff] to-[#4d8eff] text-[#00285d] px-10 py-5 rounded-xl font-bold text-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 group/btn shadow-lg shadow-[#4d8eff]/20 disabled:opacity-50"
                 >
-                  Analyze
-                  <span className="material-symbols-outlined group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-[#00285d]/30 border-t-[#00285d] rounded-full animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      Analyze
+                      <span className="material-symbols-outlined group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
+
+            {/* Error */}
+            {error && (
+              <div className="mt-4 bg-red-400/10 border border-red-400/20 rounded-xl p-4 text-center">
+                <p className="text-red-400 text-sm font-medium">{error}</p>
+              </div>
+            )}
+
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <span className="text-xs font-bold text-[#8c909f] uppercase tracking-wider self-center">Trending:</span>
               {['#MrBeast Analysis', '#TechReviews', '#AI SaaS Gaps'].map((tag) => (
