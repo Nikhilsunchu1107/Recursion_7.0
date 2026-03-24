@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useAnalysis } from '../context/AnalysisContext';
-import { discoverCompetitors } from '../lib/api';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
 
@@ -12,7 +11,7 @@ function formatNumber(n) {
 }
 
 export default function CompetitorDiscovery() {
-  const { channelUrl, competitors, setCompetitors, setLoadingStage } = useAnalysis();
+  const { channelUrl, competitors, runCorePipeline } = useAnalysis();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchUrl, setSearchUrl] = useState(channelUrl || '');
@@ -28,15 +27,12 @@ export default function CompetitorDiscovery() {
   const fetchCompetitors = async (url) => {
     setLoading(true);
     setError(null);
-    setLoadingStage('competitors');
     try {
-      const result = await discoverCompetitors(url);
-      setCompetitors(result);
+      await runCorePipeline(url, { force: true });
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setLoadingStage(null);
     }
   };
 

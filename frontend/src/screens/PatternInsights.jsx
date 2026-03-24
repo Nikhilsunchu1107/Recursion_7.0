@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
 import { useAnalysis } from '../context/AnalysisContext';
-import { runFullAnalysis } from '../lib/api';
 
 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -16,7 +15,7 @@ const defaultHeatmapRows = [
 const accentColors = ['text-[#adc6ff]', 'text-[#d0bcff]', 'text-[#a8edea]', 'text-[#adc6ff]'];
 
 export default function PatternInsights() {
-  const { channelUrl, patterns, setPatterns, setLoadingStage } = useAnalysis();
+  const { channelUrl, patterns, runAnalysisPipeline } = useAnalysis();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -28,17 +27,22 @@ export default function PatternInsights() {
   }, [channelUrl]);
 
   const fetchPatterns = async () => {
+    if (!channelUrl) {
+      setError('Enter a channel URL in Dashboard first.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    setLoadingStage('patterns');
     try {
-      const result = await runFullAnalysis(channelUrl);
-      setPatterns(result);
+      await runAnalysisPipeline(channelUrl, {
+        includePatterns: true,
+        includeStrategy: false,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setLoadingStage(null);
     }
   };
 

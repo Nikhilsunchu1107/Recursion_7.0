@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
 import { useAnalysis } from '../context/AnalysisContext';
-import { generateStrategy } from '../lib/api';
 
 const accentSets = [
   { border: 'border-[#adc6ff]', text: 'text-[#adc6ff]' },
@@ -11,7 +10,7 @@ const accentSets = [
 ];
 
 export default function OpportunityGaps() {
-  const { channelUrl, strategy: ctxStrategy, setStrategy: setCtxStrategy } = useAnalysis();
+  const { channelUrl, strategy: ctxStrategy, runAnalysisPipeline } = useAnalysis();
   const [gaps, setGaps] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,10 +29,10 @@ export default function OpportunityGaps() {
     setLoading(true);
     setError(null);
     try {
-      const data = await generateStrategy(url);
-      setGaps(data?.strategy?.content_gaps || []);
-      setChannelName(data?.channel || '');
-      setCtxStrategy(data);
+      await runAnalysisPipeline(url, {
+        includePatterns: false,
+        includeStrategy: true,
+      });
     } catch (err) {
       setError(err.message);
     } finally {

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnalysis } from '../context/AnalysisContext';
-import { analyzeChannel } from '../lib/api';
 import BottomNav from '../components/BottomNav';
 
 export default function SearchAnalyzeLanding() {
   const navigate = useNavigate();
-  const { setChannelUrl, setChannelData, setCompetitors, setPatterns, setStrategy, setError: setCtxError } = useAnalysis();
+  const { runCorePipeline, setError: setCtxError } = useAnalysis();
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,16 +17,10 @@ export default function SearchAnalyzeLanding() {
 
     setLoading(true);
     setError(null);
-    // Reset previous analysis
-    setCompetitors(null);
-    setPatterns(null);
-    setStrategy(null);
     setCtxError(null);
 
     try {
-      setChannelUrl(trimmed);
-      const data = await analyzeChannel(trimmed);
-      setChannelData(data);
+      await runCorePipeline(trimmed, { force: true });
       navigate('/dashboard_overview');
     } catch (err) {
       setError(err.message);

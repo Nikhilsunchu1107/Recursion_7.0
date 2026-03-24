@@ -14,7 +14,7 @@ class AnalysisRequest(BaseModel):
 async def run_analysis(request: AnalysisRequest):
     """
     Run the full Phase 4 competitor analysis pipeline.
-    Requires the channel to have been analyzed (/channel/analyze) and
+    Requires the channel to have been analyzed (GET /channel/{channel_url}) and
     competitor discovery to have been run (/competitors/discover) first.
     """
     try:
@@ -24,7 +24,7 @@ async def run_analysis(request: AnalysisRequest):
         if not dataset:
             raise HTTPException(
                 status_code=404,
-                detail="Channel not analyzed yet. Call /channel/analyze first."
+                detail="Channel not analyzed yet. Call GET /channel/{channel_url} first."
             )
 
         if "competitors" not in dataset:

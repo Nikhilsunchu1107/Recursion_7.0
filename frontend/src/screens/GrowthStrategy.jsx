@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
 import { useAnalysis } from '../context/AnalysisContext';
-import { generateStrategy } from '../lib/api';
 
 const priorityStyles = {
   high: { label: 'High Priority', classes: 'text-red-400 bg-red-400/10' },
@@ -14,7 +13,7 @@ const accentColors = ['text-[#adc6ff]', 'text-[#d0bcff]', 'text-[#a8edea]', 'tex
 const iconPool = ['auto_awesome', 'hub', 'forum', 'campaign', 'trending_up', 'video_library'];
 
 export default function GrowthStrategy() {
-  const { channelUrl, strategy: ctxStrategy, setStrategy: setCtxStrategy } = useAnalysis();
+  const { channelUrl, strategy: ctxStrategy, runAnalysisPipeline } = useAnalysis();
   const [strategy, setStrategy] = useState(ctxStrategy || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,15 +30,22 @@ export default function GrowthStrategy() {
     setLoading(true);
     setError(null);
     try {
-      const data = await generateStrategy(url);
-      setStrategy(data);
-      setCtxStrategy(data);
+      await runAnalysisPipeline(url, {
+        includePatterns: false,
+        includeStrategy: true,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (ctxStrategy) {
+      setStrategy(ctxStrategy);
+    }
+  }, [ctxStrategy]);
 
   const recommendations = strategy?.strategy?.recommendations || [];
   const topicClusters = strategy?.strategy?.topic_clusters || [];

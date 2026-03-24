@@ -25,7 +25,7 @@ async def discover(request: CompetitorRequest):
         if not dataset:
             raise HTTPException(
                 status_code=404,
-                detail="Channel not analyzed yet. Call /channel/analyze first."
+                detail="Channel not analyzed yet. Call GET /channel/{channel_url} first."
             )
 
         result = discover_competitors(dataset, request.max_results)

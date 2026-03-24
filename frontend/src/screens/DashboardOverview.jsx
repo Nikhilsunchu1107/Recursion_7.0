@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import SideNav from '../components/SideNav';
 import BottomNav from '../components/BottomNav';
 import { useAnalysis } from '../context/AnalysisContext';
-import { analyzeChannel, discoverCompetitors } from '../lib/api';
 
 function formatNumber(n) {
   if (n == null) return '—';
@@ -16,33 +15,29 @@ export default function DashboardOverview() {
   const navigate = useNavigate();
   const {
     channelUrl, channelData, competitors,
-    setChannelUrl, setChannelData, setCompetitors,
-    setLoadingStage, setError: setCtxError,
+    runCorePipeline,
   } = useAnalysis();
 
   const [searchUrl, setSearchUrl] = useState(channelUrl || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Auto-discover competitors on mount if we have channel data but no competitors yet
+  // Auto-complete core pipeline when landing directly on dashboard.
   useEffect(() => {
-    if (channelData && !competitors && channelUrl && !loading) {
+    if (channelUrl && (!channelData || !competitors) && !loading) {
       (async () => {
         setLoading(true);
-        setLoadingStage('competitors');
         try {
-          const result = await discoverCompetitors(channelUrl);
-          setCompetitors(result);
+          await runCorePipeline(channelUrl);
         } catch (err) {
           setError(err.message);
         } finally {
           setLoading(false);
-          setLoadingStage(null);
         }
       })();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelData, competitors, channelUrl]);
+  }, [channelData, competitors, channelUrl, runCorePipeline]);
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
@@ -51,10 +46,7 @@ export default function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      setChannelUrl(trimmed);
-      const data = await analyzeChannel(trimmed);
-      setChannelData(data);
-      setCompetitors(null); // reset so effect re-triggers
+      await runCorePipeline(trimmed, { force: true });
     } catch (err) {
       setError(err.message);
     } finally {
