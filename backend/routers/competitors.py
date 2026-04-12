@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from services.youtube_service import (
@@ -7,6 +7,7 @@ from services.youtube_service import (
     save_to_cache,
 )
 from services.competitor_service import discover_competitors
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/competitors", tags=["competitors"])
 
@@ -17,7 +18,7 @@ class CompetitorRequest(BaseModel):
 
 
 @router.post("/discover")
-async def discover(request: CompetitorRequest):
+async def discover(request: CompetitorRequest, user=Depends(get_current_user)):
     try:
         channel_id = extract_channel_id(request.channel_url)
         dataset = load_from_cache(channel_id)

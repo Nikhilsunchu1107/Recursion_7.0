@@ -11,7 +11,7 @@ function formatNumber(n) {
 }
 
 export default function CompetitorDiscovery() {
-  const { channelUrl, competitors, runCorePipeline } = useAnalysis();
+  const { channelUrl, competitors, patterns, runAnalysisPipeline } = useAnalysis();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchUrl, setSearchUrl] = useState(channelUrl || '');
@@ -28,7 +28,11 @@ export default function CompetitorDiscovery() {
     setLoading(true);
     setError(null);
     try {
-      await runCorePipeline(url, { force: true });
+      await runAnalysisPipeline(url, {
+        force: true,
+        includePatterns: true,
+        includeStrategy: false,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -43,6 +47,19 @@ export default function CompetitorDiscovery() {
   };
 
   const compList = competitors?.competitors || [];
+  const analyzedRows = patterns?.competitors || [];
+  const analyzedMap = new Map(analyzedRows.map((row) => [row.channel_id, row]));
+
+  const mergedCompList = compList.map((row) => {
+    const analyzed = analyzedMap.get(row.channel_id);
+    return {
+      ...row,
+      metrics: analyzed?.metrics || row.metrics || null,
+    };
+  });
+
+  const formatPercent = (value) => (value == null || isNaN(value) ? '—' : `${Number(value).toFixed(2)}%`);
+  const formatRatio = (value) => (value == null || isNaN(value) ? '—' : Number(value).toFixed(3));
 
   return (
     <>
@@ -92,7 +109,7 @@ export default function CompetitorDiscovery() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-xs text-[#9ea0a3] bg-[#1e1f26] px-3 py-1.5 rounded-lg">
-                {compList.length} competitors found
+                 {mergedCompList.length} competitors found
               </span>
             </div>
           </div>
@@ -113,7 +130,7 @@ export default function CompetitorDiscovery() {
           )}
 
           {/* Empty State */}
-          {!loading && !error && compList.length === 0 && (
+          {!loading && !error && mergedCompList.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
               <span className="material-symbols-outlined text-[#adc6ff]/30 text-7xl">search_check</span>
               <div>
@@ -126,10 +143,11 @@ export default function CompetitorDiscovery() {
           )}
 
           {/* Competitor Card Grid */}
-          {!loading && compList.length > 0 && (
+          {!loading && mergedCompList.length > 0 && (
             <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
-              {compList.map((comp, idx) => {
+              {mergedCompList.map((comp, idx) => {
                 const tags = comp.niche_keywords || comp.tags || [];
+                const metrics = comp.metrics || {};
                 return (
                   <div
                     key={comp.channel_id || comp.channel_name}
@@ -148,7 +166,7 @@ export default function CompetitorDiscovery() {
                           <h3 className="font-bold text-lg text-[#e2e2eb] leading-tight">{comp.channel_name}</h3>
                           {comp.relevance_score != null && (
                             <p className="text-xs text-[#adc6ff] font-medium">
-                              {Math.round(comp.relevance_score * 100)}% match
+                              {Math.round(comp.relevance_score)}% match
                             </p>
                           )}
                         </div>
@@ -162,7 +180,22 @@ export default function CompetitorDiscovery() {
                         </div>
                         <div className="bg-[#0c0e14] rounded-lg p-3">
                           <p className="text-[10px] uppercase tracking-wider text-[#9ea0a3] font-bold mb-1">Avg Views</p>
-                          <p className="text-xl font-bold text-[#e2e2eb]">{formatNumber(comp.avg_views)}</p>
+                          <p className="text-xl font-bold text-[#e2e2eb]">{formatNumber(metrics.avg_views || comp.avg_views)}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-[#0c0e14] rounded-lg p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#9ea0a3] font-bold mb-1">Like/View</p>
+                          <p className="text-sm font-bold text-[#adc6ff]">{formatPercent(metrics.like_to_view_ratio)}</p>
+                        </div>
+                        <div className="bg-[#0c0e14] rounded-lg p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#9ea0a3] font-bold mb-1">Comm/View</p>
+                          <p className="text-sm font-bold text-[#d0bcff]">{formatPercent(metrics.comments_to_views_ratio)}</p>
+                        </div>
+                        <div className="bg-[#0c0e14] rounded-lg p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-[#9ea0a3] font-bold mb-1">Views/Subs</p>
+                          <p className="text-sm font-bold text-[#a8edea]">{formatRatio(metrics.views_to_subscribers_ratio)}</p>
                         </div>
                       </div>
                       {tags.length > 0 && (
@@ -184,8 +217,8 @@ export default function CompetitorDiscovery() {
                         </div>
                       )}
                       <div className="flex items-center justify-between text-xs text-[#9ea0a3]">
-                        <span>{comp.video_count ? `${comp.video_count} videos` : ''}</span>
-                        <span>{comp.upload_frequency ? `${comp.upload_frequency.toFixed(1)}/wk` : ''}</span>
+                        <span>{metrics.total_videos_analyzed ? `${metrics.total_videos_analyzed} videos analyzed` : comp.video_count ? `${comp.video_count} videos total` : ''}</span>
+                        <span>{metrics.upload_frequency ? `${metrics.upload_frequency.toFixed(1)}/wk` : ''}</span>
                       </div>
                     </div>
                   </div>

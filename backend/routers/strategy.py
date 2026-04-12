@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional
 from services.youtube_service import (
@@ -6,6 +6,8 @@ from services.youtube_service import (
     load_from_cache,
 )
 from services.llm_service import generate_strategy
+from services.auth_service import get_current_user
+from services.db_service import save_analysis_history
 
 router = APIRouter(prefix="/strategy", tags=["strategy"])
 
@@ -16,7 +18,7 @@ class StrategyRequest(BaseModel):
 
 
 @router.post("/generate")
-async def generate(request: StrategyRequest):
+async def generate(request: StrategyRequest, user=Depends(get_current_user)):
     try:
         channel_id = extract_channel_id(request.channel_url)
         dataset = load_from_cache(channel_id)
@@ -59,12 +61,26 @@ async def generate(request: StrategyRequest):
             analysis_payload=analysis_result
         )
 
-        return {
+        full_output = {
             "channel": dataset["channel"]["channel_name"],
             "based_on_competitors": [c["channel_name"] for c in strategy_competitors],
             "competitor_count": len(strategy_competitors),
-            "strategy": strategy
+            "strategy": strategy,
+            "comparison": analysis_result.get("comparison", {}),
+            "aggregated_metrics": analysis_result.get("aggregated_metrics", {}),
+            "your_channel_summary": analysis_result.get("your_channel_summary", {})
         }
+        
+        # Save to analysis_history DB
+        if user and hasattr(user, 'id'):
+            save_analysis_history(
+                user_id=user.id,
+                channel_url=request.channel_url,
+                channel_id=channel_id,
+                full_data=full_output
+            )
+
+        return full_output
 
     except HTTPException:
         raise

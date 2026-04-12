@@ -16,6 +16,10 @@ export default function OpportunityGaps() {
   const [error, setError] = useState(null);
   const [channelInput, setChannelInput] = useState(channelUrl || '');
   const [channelName, setChannelName] = useState('');
+  const comparison = ctxStrategy?.comparison || {};
+  const formatPercent = (value) => (value == null || isNaN(value) ? '—' : `${Number(value).toFixed(2)}%`);
+  const formatRatio = (value) => (value == null || isNaN(value) ? '—' : Number(value).toFixed(3));
+  const totalAnalyzedVideos = ctxStrategy?.competitors?.reduce((acc, c) => acc + (c.metrics?.total_videos_analyzed || 0), 0) || 0;
 
   // Sync from context on mount if strategy already exists
   useEffect(() => {
@@ -82,6 +86,33 @@ export default function OpportunityGaps() {
             {channelName && (
               <p className="text-[#adc6ff] mt-2 text-sm font-bold">Analyzing: {channelName}</p>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#1e1f26] p-4 rounded-xl border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-[#9ea0a3] mb-2">Like/View Benchmark</p>
+              <p className="text-lg font-bold text-[#adc6ff]">
+                {formatPercent(comparison?.your_like_to_view_ratio_vs_competitors?.yours)}
+                <span className="text-[#9ea0a3] text-sm font-medium"> / {formatPercent(comparison?.your_like_to_view_ratio_vs_competitors?.competitors_avg)}</span>
+              </p>
+              {totalAnalyzedVideos > 0 && <p className="text-[10px] text-[#9ea0a3] mt-2">(Avg based on {totalAnalyzedVideos} competitor videos)</p>}
+            </div>
+            <div className="bg-[#1e1f26] p-4 rounded-xl border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-[#9ea0a3] mb-2">Comments/View Benchmark</p>
+              <p className="text-lg font-bold text-[#d0bcff]">
+                {formatPercent(comparison?.your_comments_to_views_ratio_vs_competitors?.yours)}
+                <span className="text-[#9ea0a3] text-sm font-medium"> / {formatPercent(comparison?.your_comments_to_views_ratio_vs_competitors?.competitors_avg)}</span>
+              </p>
+              {totalAnalyzedVideos > 0 && <p className="text-[10px] text-[#9ea0a3] mt-2">(Avg based on {totalAnalyzedVideos} competitor videos)</p>}
+            </div>
+            <div className="bg-[#1e1f26] p-4 rounded-xl border border-white/5">
+              <p className="text-[10px] uppercase tracking-widest text-[#9ea0a3] mb-2">Views/Subs Benchmark</p>
+              <p className="text-lg font-bold text-[#a8edea]">
+                {formatRatio(comparison?.your_views_to_subscribers_ratio_vs_competitors?.yours)}
+                <span className="text-[#9ea0a3] text-sm font-medium"> / {formatRatio(comparison?.your_views_to_subscribers_ratio_vs_competitors?.competitors_avg)}</span>
+              </p>
+              {totalAnalyzedVideos > 0 && <p className="text-[10px] text-[#9ea0a3] mt-2">(Avg based on {totalAnalyzedVideos} competitor videos)</p>}
+            </div>
           </div>
 
           {/* Loading */}

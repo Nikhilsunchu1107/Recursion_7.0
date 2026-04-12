@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from services.youtube_service import extract_channel_id, load_from_cache, save_to_cache
 from services.analysis_service import run_full_analysis
+from services.auth_service import get_current_user
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
@@ -11,7 +12,7 @@ class AnalysisRequest(BaseModel):
 
 
 @router.post("/run")
-async def run_analysis(request: AnalysisRequest):
+async def run_analysis(request: AnalysisRequest, user=Depends(get_current_user)):
     """
     Run the full Phase 4 competitor analysis pipeline.
     Requires the channel to have been analyzed (GET /channel/{channel_url}) and
@@ -51,7 +52,7 @@ async def run_analysis(request: AnalysisRequest):
 
 
 @router.get("/{channel_id}")
-async def get_analysis(channel_id: str):
+async def get_analysis(channel_id: str, user=Depends(get_current_user)):
     """
     Retrieve a previously computed analysis from cache.
     Does not make any new API calls.

@@ -53,6 +53,11 @@ export default function PatternInsights() {
   const avgVideoLength = patterns?.avg_video_length_minutes || patterns?.pattern_analysis?.avg_video_length_minutes;
   const topKeywords = patterns?.top_keywords || patterns?.pattern_analysis?.top_keywords || [];
   const viralTitles = patterns?.viral_title_examples || patterns?.pattern_analysis?.viral_title_examples || [];
+  const aggregated = patterns?.aggregated_metrics || {};
+  const yourSummary = patterns?.your_channel_summary || {};
+  const formatPercent = (value) => (value == null || isNaN(value) ? '—' : `${Number(value).toFixed(2)}%`);
+  const formatRatio = (value) => (value == null || isNaN(value) ? '—' : Number(value).toFixed(3));
+  const totalAnalyzedVideos = patterns?.competitors?.reduce((acc, c) => acc + (c.metrics?.total_videos_analyzed || 0), 0) || 0;
 
   // Build heatmap from posting days when available
   const heatmapRows = postingDays.length > 0
@@ -66,21 +71,12 @@ export default function PatternInsights() {
       }))
     : defaultHeatmapRows;
 
-  // Build keyword list from API data or fallback
-  const keywordList = topKeywords.length > 0
-    ? topKeywords.map((kw, i) => {
-        const sizes = ['text-5xl font-black', 'text-3xl font-bold', 'text-4xl font-extrabold', 'text-2xl font-medium', 'text-4xl font-bold', 'text-2xl font-semibold', 'text-3xl font-extrabold', 'text-xl font-medium', 'text-4xl font-black', 'text-2xl font-bold'];
-        const colors = ['text-[#adc6ff] opacity-90', 'text-[#d0bcff] opacity-70', 'text-[#e2e2eb]', 'text-[#a8edea] opacity-80', 'text-[#adc6ff]/80', 'text-[#9ea0a3] opacity-60', 'text-[#d0bcff]/80', 'text-[#c2c6d6] opacity-50', 'text-[#adc6ff] opacity-80', 'text-[#a8edea] opacity-70'];
-        return [kw, `${sizes[i % sizes.length]} ${colors[i % colors.length]}`];
-      })
-    : [
-        ['No data yet', 'text-3xl font-bold text-[#9ea0a3] opacity-50'],
-        ['Analyze a channel first', 'text-2xl font-medium text-[#9ea0a3] opacity-30'],
-      ];
-
   const metricData = [
     { label: 'Upload Frequency', value: uploadFreq ? `${Number(uploadFreq).toFixed(1)}x` : '—', sub: 'Average uploads per week across analyzed competitors.', borderColor: 'border-[#adc6ff]/20', textColor: 'text-[#adc6ff]', badge: '/week' },
     { label: 'Avg Video Length', value: avgVideoLength ? `${Number(avgVideoLength).toFixed(0)}m` : '—', sub: 'Average video duration for top-performing competitor content.', borderColor: 'border-[#d0bcff]/20', textColor: 'text-[#d0bcff]' },
+    { label: 'Avg Like/View', value: formatPercent(aggregated.avg_like_to_view_ratio), sub: `Competitor average like-to-view ratio.${totalAnalyzedVideos > 0 ? ` (Based on ${totalAnalyzedVideos} videos)` : ''}`, borderColor: 'border-[#a8edea]/20', textColor: 'text-[#a8edea]' },
+    { label: 'Avg Comments/View', value: formatPercent(aggregated.avg_comments_to_views_ratio), sub: `Competitor average comments-to-views ratio.${totalAnalyzedVideos > 0 ? ` (Based on ${totalAnalyzedVideos} videos)` : ''}`, borderColor: 'border-[#adc6ff]/20', textColor: 'text-[#adc6ff]' },
+    { label: 'Your Views/Subs', value: formatRatio(yourSummary.views_to_subscribers_ratio), sub: 'Your channel average views-to-subscribers ratio.', borderColor: 'border-[#d0bcff]/20', textColor: 'text-[#d0bcff]' },
     { label: 'Topic Clusters', value: topicClusters.length > 0 ? String(topicClusters.length) : '—', sub: 'Number of distinct content themes identified across competitors.', borderColor: 'border-[#a8edea]/20', textColor: 'text-[#a8edea]' },
   ];
 
@@ -201,17 +197,13 @@ export default function PatternInsights() {
             </div>
           </section>
 
-          {/* Word Cloud / Topic Clusters */}
+          {/* Topic Clusters */}
           <section className="col-span-12 bg-[#1e1f26] p-8 rounded-xl border border-white/5">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
               <div>
-                <h3 className="text-2xl font-black text-[#e2e2eb]">
-                  {topicClusters.length > 0 ? 'Topic Clusters' : 'Semantic Hotspots'}
-                </h3>
+                <h3 className="text-2xl font-black text-[#e2e2eb]">Topic Clusters</h3>
                 <p className="text-sm text-[#9ea0a3]">
-                  {topicClusters.length > 0
-                    ? 'Content themes identified across competitor channels'
-                    : 'Top performing keywords and topics by share of voice'}
+                  Content themes identified across competitor channels.
                 </p>
               </div>
             </div>
@@ -236,10 +228,10 @@ export default function PatternInsights() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-8 p-6">
-                {keywordList.map(([word, cls]) => (
-                  <span key={word} className={`${cls} hover:scale-110 transition-transform cursor-default`}>{word}</span>
-                ))}
+              <div className="bg-[#0c0e14] border border-white/5 rounded-xl p-6 text-center">
+                <p className="text-[#9ea0a3] text-sm">
+                  No topic clusters available yet. Run analysis on a channel with discovered competitors.
+                </p>
               </div>
             )}
           </section>

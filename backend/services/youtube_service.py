@@ -54,6 +54,12 @@ def _extract_top_keywords(text: str, num: int = 5) -> list:
     counter = Counter(words)
     return [word for word, _ in counter.most_common(num)]
 
+
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    if not denominator:
+        return 0.0
+    return numerator / denominator
+
 # ---------------------------------------------------------------------------
 # Phase 2.1 — URL → Channel ID
 # ---------------------------------------------------------------------------
@@ -414,11 +420,37 @@ def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword:
     print(f"🔎 Top search queries for competitor discovery: {signals['top_search_queries']}")
 
     # --- Step 7: Build Summary ---
+    total_videos = len(combined_videos)
+    total_views = sum(v["views"] for v in combined_videos)
+    total_likes = sum(v["likes"] for v in combined_videos)
+    total_comments = sum(v["comments"] for v in combined_videos)
+
+    avg_views = int(total_views / total_videos) if combined_videos else 0
+    avg_likes = int(total_likes / total_videos) if combined_videos else 0
+    avg_comments = int(total_comments / total_videos) if combined_videos else 0
+
+    published_dates = sorted([
+        datetime.fromisoformat(v["published_at"].replace("Z", "+00:00"))
+        for v in combined_videos
+        if v.get("published_at")
+    ])
+
+    if len(published_dates) >= 2:
+        span_days = max((published_dates[-1] - published_dates[0]).days, 1)
+        upload_frequency = round(total_videos / (span_days / 7), 2)
+    else:
+        upload_frequency = 0.0
+
     summary = {
-        "total_videos_fetched": len(combined_videos),
-        "avg_views": int(sum(v["views"] for v in combined_videos) / len(combined_videos)) if combined_videos else 0,
-        "avg_likes": int(sum(v["likes"] for v in combined_videos) / len(combined_videos)) if combined_videos else 0,
-        "avg_duration_minutes": round(sum(v["duration_minutes"] for v in combined_videos) / len(combined_videos), 2) if combined_videos else 0,
+        "total_videos_fetched": total_videos,
+        "avg_views": avg_views,
+        "avg_likes": avg_likes,
+        "avg_comments": avg_comments,
+        "avg_duration_minutes": round(sum(v["duration_minutes"] for v in combined_videos) / total_videos, 2) if combined_videos else 0,
+        "upload_frequency": upload_frequency,
+        "like_to_view_ratio": round(_safe_ratio(total_likes, total_views) * 100, 2),
+        "comments_to_views_ratio": round(_safe_ratio(total_comments, total_views) * 100, 2),
+        "views_to_subscribers_ratio": round(_safe_ratio(avg_views, channel_info.get("subscribers", 0)), 4),
         "top_video": combined_videos[0] if combined_videos else None,
         "most_used_hashtags": most_used_hashtags,
         "most_used_tags": most_used_tags

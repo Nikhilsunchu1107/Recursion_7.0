@@ -60,6 +60,34 @@ def _extract_keywords(titles: List[str], top_n: int = 10) -> List[str]:
     return [word for word, _ in counter.most_common(top_n)]
 
 
+def _build_topic_clusters(competitors_with_keywords: list, max_clusters: int = 6) -> list:
+    topic_counter = Counter()
+    topic_channels = {}
+
+    for comp in competitors_with_keywords:
+        channel_name = comp.get("channel_name", "")
+        topics = comp.get("keywords", {}).get("common_topics", [])
+        for topic in topics:
+            normalized = str(topic).strip().lower()
+            if len(normalized) < 3:
+                continue
+            topic_counter[normalized] += 1
+            topic_channels.setdefault(normalized, set()).add(channel_name)
+
+    clusters = []
+    for topic, count in topic_counter.most_common(max_clusters):
+        channels = sorted(topic_channels.get(topic, set()))
+        clusters.append(
+            {
+                "topic_name": topic,
+                "description": f"Appears across {count} competitor channel(s).",
+                "competitors_using_this": channels[:6],
+            }
+        )
+
+    return clusters
+
+
 # ---------------------------------------------------------------------------
 # Original Phase 3 — analyze_patterns (kept intact)
 # ---------------------------------------------------------------------------
@@ -240,6 +268,9 @@ def compute_metrics(competitor: dict) -> dict:
             "avg_duration_minutes": 0,
             "upload_frequency": 0,
             "engagement_ratio": 0,
+            "like_to_view_ratio": 0,
+            "comments_to_views_ratio": 0,
+            "views_to_subscribers_ratio": 0,
             "total_videos_analyzed": 0
         }
 
@@ -266,6 +297,9 @@ def compute_metrics(competitor: dict) -> dict:
         upload_frequency = 0
 
     engagement_ratio = round((total_likes + total_comments) / max(total_views, 1) * 100, 2)
+    like_to_view_ratio = round((total_likes / max(total_views, 1)) * 100, 2)
+    comments_to_views_ratio = round((total_comments / max(total_views, 1)) * 100, 2)
+    views_to_subscribers_ratio = round(avg_views / max(competitor.get("subscribers", 0), 1), 4)
     top_video = max(videos, key=lambda v: v.get("views", 0))
 
     return {
@@ -275,6 +309,9 @@ def compute_metrics(competitor: dict) -> dict:
         "avg_duration_minutes": avg_duration,
         "upload_frequency": upload_frequency,
         "engagement_ratio": engagement_ratio,
+        "like_to_view_ratio": like_to_view_ratio,
+        "comments_to_views_ratio": comments_to_views_ratio,
+        "views_to_subscribers_ratio": views_to_subscribers_ratio,
         "top_video": top_video,
         "total_videos_analyzed": n
     }
@@ -436,6 +473,18 @@ def run_full_analysis(your_channel_data: dict, competitor_result: dict) -> dict:
             sum(c["metrics"]["engagement_ratio"] for c in competitors_with_videos) /
             max(len(competitors_with_videos), 1), 2
         ),
+        "avg_like_to_view_ratio": round(
+            sum(c["metrics"]["like_to_view_ratio"] for c in competitors_with_videos) /
+            max(len(competitors_with_videos), 1), 2
+        ),
+        "avg_comments_to_views_ratio": round(
+            sum(c["metrics"]["comments_to_views_ratio"] for c in competitors_with_videos) /
+            max(len(competitors_with_videos), 1), 2
+        ),
+        "avg_views_to_subscribers_ratio": round(
+            sum(c["metrics"]["views_to_subscribers_ratio"] for c in competitors_with_videos) /
+            max(len(competitors_with_videos), 1), 4
+        ),
         "avg_video_duration": round(
             sum(c["metrics"]["avg_duration_minutes"] for c in competitors_with_videos) /
             max(len(competitors_with_videos), 1), 2
@@ -464,6 +513,8 @@ def run_full_analysis(your_channel_data: dict, competitor_result: dict) -> dict:
         for topic in comp["keywords"]["high_performing_keywords"]
     ))
 
+    topic_clusters = _build_topic_clusters(competitors_with_videos)
+
     print(f"🔥 High priority content gaps: {[g['topic'] for g in gaps['high_priority_gaps']]}")
     print("✅ Analysis complete!")
 
@@ -478,12 +529,18 @@ def run_full_analysis(your_channel_data: dict, competitor_result: dict) -> dict:
         "aggregated_metrics": aggregated,
         "all_competitor_topics": all_competitor_topics,
         "high_performing_topics": high_performing_topics,
+        "topic_clusters": topic_clusters,
         "content_gaps": gaps,
         "your_channel_summary": {
             "channel_name": your_channel.get("channel_name", ""),
             "subscribers": your_channel.get("subscribers", 0),
             "avg_views": your_summary.get("avg_views", 0),
             "avg_likes": your_summary.get("avg_likes", 0),
+            "avg_comments": your_summary.get("avg_comments", 0),
+            "upload_frequency": your_summary.get("upload_frequency", 0),
+            "like_to_view_ratio": your_summary.get("like_to_view_ratio", 0),
+            "comments_to_views_ratio": your_summary.get("comments_to_views_ratio", 0),
+            "views_to_subscribers_ratio": your_summary.get("views_to_subscribers_ratio", 0),
             "your_topics": list(set(your_signals.get("all_keywords", [])))
         },
         "comparison": {
@@ -506,6 +563,18 @@ def run_full_analysis(your_channel_data: dict, competitor_result: dict) -> dict:
                      max(your_summary.get("avg_views", 1), 1)) * 100, 2
                 ),
                 "competitors_avg": aggregated["avg_engagement_ratio"]
+            },
+            "your_like_to_view_ratio_vs_competitors": {
+                "yours": your_summary.get("like_to_view_ratio", 0),
+                "competitors_avg": aggregated["avg_like_to_view_ratio"]
+            },
+            "your_comments_to_views_ratio_vs_competitors": {
+                "yours": your_summary.get("comments_to_views_ratio", 0),
+                "competitors_avg": aggregated["avg_comments_to_views_ratio"]
+            },
+            "your_views_to_subscribers_ratio_vs_competitors": {
+                "yours": your_summary.get("views_to_subscribers_ratio", 0),
+                "competitors_avg": aggregated["avg_views_to_subscribers_ratio"]
             }
         }
     }

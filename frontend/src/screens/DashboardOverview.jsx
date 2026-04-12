@@ -14,21 +14,37 @@ function formatNumber(n) {
 export default function DashboardOverview() {
   const navigate = useNavigate();
   const {
-    channelUrl, channelData, competitors,
-    runCorePipeline,
+    channelUrl, channelData, competitors, patterns,
+    runAnalysisPipeline,
   } = useAnalysis();
 
   const [searchUrl, setSearchUrl] = useState(channelUrl || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Auto-complete core pipeline when landing directly on dashboard.
+  const mergeCompetitorsWithMetrics = () => {
+    const baseRows = competitors?.competitors || [];
+    const analyzedRows = patterns?.competitors || [];
+
+    if (!baseRows.length) return [];
+
+    const analyzedMap = new Map(analyzedRows.map((row) => [row.channel_id, row]));
+    return baseRows.map((row) => {
+      const analyzed = analyzedMap.get(row.channel_id);
+      return {
+        ...row,
+        metrics: analyzed?.metrics || row.metrics || null,
+      };
+    });
+  };
+
+  // Auto-run analysis pipeline when landing directly on dashboard.
   useEffect(() => {
-    if (channelUrl && (!channelData || !competitors) && !loading) {
+    if (channelUrl && (!channelData || !competitors || !patterns) && !loading) {
       (async () => {
         setLoading(true);
         try {
-          await runCorePipeline(channelUrl);
+          await runAnalysisPipeline(channelUrl, { includePatterns: true, includeStrategy: false });
         } catch (err) {
           setError(err.message);
         } finally {
@@ -37,7 +53,7 @@ export default function DashboardOverview() {
       })();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelData, competitors, channelUrl, runCorePipeline]);
+  }, [channelData, competitors, patterns, channelUrl, runAnalysisPipeline]);
 
   const handleAnalyze = async (e) => {
     e.preventDefault();
@@ -46,7 +62,11 @@ export default function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      await runCorePipeline(trimmed, { force: true });
+      await runAnalysisPipeline(trimmed, {
+        force: true,
+        includePatterns: true,
+        includeStrategy: false,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,14 +76,15 @@ export default function DashboardOverview() {
 
   // Derive stats from real data
   const channel = channelData?.channel || {};
-  const compList = competitors?.competitors || [];
+  const compList = mergeCompetitorsWithMetrics();
+  const aggregatedMetrics = patterns?.aggregated_metrics || {};
+  const yourSummary = patterns?.your_channel_summary || channelData?.summary || {};
+
+  const formatPercent = (value) => (value == null || isNaN(value) ? '—' : `${Number(value).toFixed(2)}%`);
+  const formatRatio = (value) => (value == null || isNaN(value) ? '—' : Number(value).toFixed(3));
+
   const totalCompetitors = compList.length;
-  const avgViews = compList.length > 0
-    ? Math.round(compList.reduce((sum, c) => sum + (c.avg_views || 0), 0) / compList.length)
-    : channel.avg_views || 0;
-  const avgUploadFreq = compList.length > 0
-    ? (compList.reduce((sum, c) => sum + (c.upload_frequency || 0), 0) / compList.length).toFixed(1)
-    : '—';
+  const totalAnalyzedVideos = compList.reduce((acc, c) => acc + (c.metrics?.total_videos_analyzed || 0), 0);
 
   return (
     <>
@@ -147,29 +168,34 @@ export default function DashboardOverview() {
               </div>
             </div>
             <div className="bg-[#1e1f26] p-6 rounded-xl border border-white/5 hover:bg-[#282a30] transition-colors">
-              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Avg Views/Video</p>
+              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Avg Like-to-View</p>
               <div className="flex items-end justify-between">
-                <h3 className="text-4xl font-extrabold tracking-tight text-[#e2e2eb]">{formatNumber(avgViews)}</h3>
+                <h3 className="text-4xl font-extrabold tracking-tight text-[#e2e2eb]">
+                  {formatPercent(aggregatedMetrics.avg_like_to_view_ratio)}
+                </h3>
+                {totalAnalyzedVideos > 0 && <span className="text-[10px] text-[#9ea0a3] ml-2">({totalAnalyzedVideos} videos analyzed)</span>}
               </div>
               <div className="mt-4 h-1 w-full bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-[#d0bcff] w-[45%]" />
               </div>
             </div>
             <div className="bg-[#1e1f26] p-6 rounded-xl border border-white/5 hover:bg-[#282a30] transition-colors">
-              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Upload Frequency</p>
+              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Avg Comments-to-Views</p>
               <div className="flex items-end justify-between">
-                <h3 className="text-4xl font-extrabold tracking-tight text-[#e2e2eb]">{avgUploadFreq}</h3>
-                <span className="text-xs text-[#9ea0a3]">Videos / Week</span>
+                <h3 className="text-4xl font-extrabold tracking-tight text-[#e2e2eb]">
+                  {formatPercent(aggregatedMetrics.avg_comments_to_views_ratio)}
+                </h3>
+                <span className="text-xs text-[#9ea0a3]">Competitor avg <br/>{totalAnalyzedVideos > 0 && <span className="text-[10px]">({totalAnalyzedVideos} videos analyzed)</span>}</span>
               </div>
               <div className="mt-4 h-1 w-full bg-white/10 rounded-full overflow-hidden">
                 <div className="h-full bg-[#a8edea] w-[80%]" />
               </div>
             </div>
             <div className="bg-[#1e1f26] p-6 rounded-xl border border-white/5 hover:bg-[#282a30] transition-colors">
-              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Your Channel Views</p>
+              <p className="text-xs font-medium text-[#9ea0a3] mb-4 uppercase tracking-wider">Your Views-to-Subscribers</p>
               <div className="flex items-end justify-between">
                 <h3 className="text-4xl font-extrabold tracking-tight text-[#adc6ff]">
-                  {formatNumber(channel.total_views)}
+                  {formatRatio(yourSummary.views_to_subscribers_ratio)}
                 </h3>
                 <span className="material-symbols-outlined text-[#adc6ff]" style={{ fontVariationSettings: "'FILL' 1" }}>
                   auto_awesome
@@ -199,7 +225,9 @@ export default function DashboardOverview() {
                     <th className="px-6 py-4 font-bold">Channel Name</th>
                     <th className="px-6 py-4 font-bold">Subscribers</th>
                     <th className="px-6 py-4 font-bold">Avg Views</th>
-                    <th className="px-6 py-4 font-bold">Upload Freq</th>
+                    <th className="px-6 py-4 font-bold">Like/View</th>
+                    <th className="px-6 py-4 font-bold">Comments/View</th>
+                    <th className="px-6 py-4 font-bold">Views/Subs</th>
                     <th className="px-6 py-4 font-bold">Relevance</th>
                     <th className="px-6 py-4 font-bold text-right">Action</th>
                   </tr>
@@ -207,22 +235,25 @@ export default function DashboardOverview() {
                 <tbody className="divide-y divide-white/5">
                   {compList.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-[#9ea0a3]">
+                      <td colSpan={9} className="px-6 py-12 text-center text-[#9ea0a3]">
                         {channelData ? 'No competitors discovered yet.' : 'Analyze a channel to see competitors.'}
                       </td>
                     </tr>
                   )}
                   {compList.slice(0, 5).map((comp) => {
                     const score = comp.relevance_score ?? comp.similarity_score ?? 0;
-                    const pct = Math.round(Math.min(score * 100, 100));
+                    const pct = Math.round(Math.min(score, 100));
+                    const metrics = comp.metrics || {};
                     return (
                       <tr key={comp.channel_id || comp.channel_name} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
                           <span className="font-bold text-sm text-[#e2e2eb]">{comp.channel_name}</span>
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatNumber(comp.subscriber_count || comp.subscribers)}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatNumber(comp.avg_views)}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{comp.upload_frequency ? `${comp.upload_frequency.toFixed(1)}/wk` : '—'}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatNumber(metrics.avg_views || comp.avg_views)}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatPercent(metrics.like_to_view_ratio)}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatPercent(metrics.comments_to_views_ratio)}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-[#c2c6d6]">{formatRatio(metrics.views_to_subscribers_ratio)}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-[#adc6ff]">{pct}%</span>
@@ -264,8 +295,9 @@ export default function DashboardOverview() {
               <div className="flex items-end justify-between h-48 gap-4 px-2">
                 {(compList.length > 0 ? compList.slice(0, 4) : [{ channel_name: 'N/A' }, { channel_name: 'N/A' }, { channel_name: 'N/A' }, { channel_name: 'N/A' }]).map(
                   (c, i) => {
-                    const maxV = Math.max(...compList.map(x => x.avg_views || 0), channel.avg_views || 1, 1);
-                    const h = c.avg_views ? `${Math.max((c.avg_views / maxV) * 100, 10)}%` : '15%';
+                    const cViews = c.metrics?.avg_views || c.avg_views || 0;
+                    const maxV = Math.max(...compList.map(x => x.metrics?.avg_views || x.avg_views || 0), yourSummary.avg_views || 1, 1);
+                    const h = cViews ? `${Math.max((cViews / maxV) * 100, 10)}%` : '15%';
                     return (
                       <div key={i} className="flex-1 flex flex-col gap-2 items-center h-full justify-end group">
                         <div
