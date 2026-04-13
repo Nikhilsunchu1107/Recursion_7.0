@@ -5,6 +5,8 @@ import requests
 from collections import Counter
 from datetime import datetime
 from dotenv import load_dotenv
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 load_dotenv()
 
@@ -276,6 +278,19 @@ def apply_hard_filters(competitors: list, your_channel_id: str, your_subscribers
 # Function 6 — Calculate Relevance Score
 # ---------------------------------------------------------------------------
 
+def _cosine_keyword_overlap(your_keywords: list[str], comp_description: str) -> float:
+    """Return cosine similarity between your keyword text and competitor description."""
+    your_text = " ".join([kw for kw in your_keywords if isinstance(kw, str) and kw.strip()])
+    if not your_text or not comp_description:
+        return 0.0
+
+    try:
+        vectorizer = TfidfVectorizer(stop_words="english")
+        matrix = vectorizer.fit_transform([your_text, comp_description])
+        return float(cosine_similarity(matrix[0], matrix[1])[0][0])
+    except ValueError:
+        return 0.0
+
 def calculate_relevance_score(competitor: dict, your_signals: dict, your_subscribers: int) -> dict:
     """Score each competitor out of 100 based on 4 criteria."""
     score = 0
@@ -299,16 +314,15 @@ def calculate_relevance_score(competitor: dict, your_signals: dict, your_subscri
     # Criteria 2 — Keyword Overlap in Description (25 pts)
     your_keywords = set(kw.lower() for kw in your_signals.get("all_keywords", []))
     your_channel_kws = set(kw.lower() for kw in your_signals.get("channel_keywords", []))
-    all_your_keywords = your_keywords | your_channel_kws
+    all_your_keywords = list(your_keywords | your_channel_kws)
 
-    comp_desc_words = set(competitor.get("description", "").lower().split())
-    overlap = len(all_your_keywords & comp_desc_words)
+    keyword_similarity = _cosine_keyword_overlap(all_your_keywords, competitor.get("description", ""))
 
-    if overlap >= 5:
+    if keyword_similarity >= 0.35:
         keyword_overlap_score = 25
-    elif overlap >= 3:
+    elif keyword_similarity >= 0.15:
         keyword_overlap_score = 18
-    elif overlap >= 1:
+    elif keyword_similarity >= 0.05:
         keyword_overlap_score = 10
     score += keyword_overlap_score
 
@@ -349,7 +363,8 @@ def calculate_relevance_score(competitor: dict, your_signals: dict, your_subscri
     competitor["relevance_score"] = score
     competitor["score_breakdown"] = {
         "subscriber_proximity": subscriber_proximity_score,
-        "keyword_overlap": overlap,
+        "keyword_overlap": keyword_overlap_score,
+        "keyword_similarity": round(keyword_similarity, 4),
         "topic_match": topic_match_score,
         "channel_keyword_match": kw_match,
         "total": score,

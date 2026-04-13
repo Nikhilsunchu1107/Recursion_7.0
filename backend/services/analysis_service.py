@@ -239,7 +239,6 @@ def fetch_competitor_videos(competitors: list) -> list:
                     "duration_minutes": stats.get("duration_minutes", 0.0),
                     "tags": stats.get("tags", []),
                     "video_hashtags": stats.get("video_hashtags", []),
-                    "video_keywords": stats.get("video_keywords", []),
                 })
 
             competitor["videos"] = videos

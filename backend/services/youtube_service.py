@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from services.cache_service import get_cache, set_cache
+from services.tfidf_service import extract_tfidf_keywords
 
 load_dotenv()
 
@@ -285,9 +286,7 @@ def get_video_details(video_ids: list) -> dict:
             desc = snippet.get("description", "")
             hashtags = [f"#{h}" for h in re.findall(r'#(\w+)', desc)]
             
-            # Keywords
             title = snippet.get("title", "")
-            keywords = _extract_top_keywords(title, 5)
             
             stats_map[vid] = {
                 "title": title,
@@ -298,8 +297,7 @@ def get_video_details(video_ids: list) -> dict:
                 "comments": int(stats.get("commentCount", 0)),
                 "duration_minutes": parse_duration_to_minutes(content.get("duration", "PT0S")),
                 "tags": tags,
-                "video_hashtags": hashtags,
-                "video_keywords": keywords
+                "video_hashtags": hashtags
             }
         except Exception as e:
             print(f"⚠️ Single video parse failed, skipping: {e}")
@@ -336,8 +334,6 @@ def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword:
     
     all_hashtags = set(channel_info.get("description_hashtags", []))
     all_tags = set()
-    all_keywords = channel_info.get("description_keywords", [])
-    
     title_words = []
     
     for video in playlist_videos:
@@ -354,8 +350,7 @@ def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword:
             "comments": stats.get("comments", 0),
             "duration_minutes": stats.get("duration_minutes", 0.0),
             "tags": stats.get("tags", []),
-            "video_hashtags": stats.get("video_hashtags", []),
-            "video_keywords": stats.get("video_keywords", [])
+            "video_hashtags": stats.get("video_hashtags", [])
         }
         
         # Accumulate signal data
@@ -370,9 +365,11 @@ def build_channel_dataset(channel_url: str, max_videos: int = 20, niche_keyword:
         
     combined_videos.sort(key=lambda x: x["views"], reverse=True)
     
-    # Compile top 15 all_keywords
-    kw_counter = Counter(all_keywords + title_words)
-    final_all_keywords = [w for w, _ in kw_counter.most_common(15)]
+    # Compile top 15 all_keywords using corpus-level TF-IDF
+    title_documents = [v.get("title", "") for v in combined_videos if v.get("title")]
+    description_document = channel_info.get("description", "")
+    corpus_documents = title_documents + ([description_document] if description_document else [])
+    final_all_keywords = extract_tfidf_keywords(corpus_documents, 15)
     
     # Calculate most used tags/hashtags for summary
     hash_counter = Counter([h for v in combined_videos for h in v["video_hashtags"]])
@@ -566,7 +563,6 @@ def fetch_videos_for_competitors(competitors: list, max_videos: int = 10) -> lis
             v["comments"] = stats.get("comments", 0)
             v["duration_minutes"] = stats.get("duration_minutes", 0.0)
             v["tags"] = stats.get("tags", [])
-            v["video_keywords"] = stats.get("video_keywords", [])
             enriched_videos.append(v)
             
         # Reconstruct competitor with recent_videos

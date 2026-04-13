@@ -7,3 +7,4 @@ pydantic
 isodate
 redis
 supabase
+scikit-learn
